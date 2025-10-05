@@ -21,6 +21,9 @@ public class UserResponse {
     private String correo;
     private String username;
     private Role role;
+    private String busId;
+    private String busPlate;
+    private String busNumber;
 
     public static UserResponse from(Usuario usuario) {
         return UserResponse.builder()

@@ -22,6 +22,10 @@ public class ConductorResponse {
     private Boolean licenciaVencida;
     private Boolean licenciaPorVencer;
 
+    // ✅ INFORMACIÓN DE LA EMPRESA
+    private Long empresaId;
+    private String empresaNombre;
+
     public static ConductorResponse from(Conductor conductor) {
         return ConductorResponse.builder()
                 .id(conductor.getId())
@@ -35,6 +39,14 @@ public class ConductorResponse {
                 .placaBusAsignado(conductor.getBusAsignado() != null ? conductor.getBusAsignado().getPlaca() : "Sin asignar")
                 .licenciaVencida(conductor.isLicenciaVencida())
                 .licenciaPorVencer(conductor.isLicenciaPorVencer())
+                .empresaId(conductor.getEmpresaId())
+                .empresaNombre("Cargando...") // Se llenará en el servicio
                 .build();
+    }
+
+    public static ConductorResponse fromWithEmpresa(Conductor conductor, String empresaNombre) {
+        ConductorResponse response = from(conductor);
+        response.setEmpresaNombre(empresaNombre);
+        return response;
     }
 }

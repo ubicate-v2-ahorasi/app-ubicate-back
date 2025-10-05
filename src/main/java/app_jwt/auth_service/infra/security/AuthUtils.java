@@ -28,4 +28,31 @@ public class AuthUtils {
         }
         return null;
     }
+
+    public void validateEmpresaAccess(Authentication auth, Long expectedEmpresaId, String resource) {
+        Long tokenEmpresaId = getEmpresaId(auth);
+
+        if (!tokenEmpresaId.equals(expectedEmpresaId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    String.format("No tiene permisos para acceder a %s de otra empresa", resource));
+        }
+    }
+
+    public void validateIsEmpresa(Authentication auth) {
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
+        }
+
+        if (auth.getPrincipal() instanceof JwtUser jwtUser) {
+            boolean hasEmpresaRole = jwtUser.getAuthorities().stream()
+                    .anyMatch(authority -> authority.getAuthority().equals("ROLE_EMPRESA"));
+
+            if (!hasEmpresaRole) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Solo las empresas pueden realizar esta operación");
+            }
+        } else {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Token inválido");
+        }
+    }
 }

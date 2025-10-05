@@ -3,12 +3,14 @@ package app_jwt.auth_service.domain.service;
 import app_jwt.auth_service.domain.dtos.conductor.*;
 import app_jwt.auth_service.domain.entity.Bus;
 import app_jwt.auth_service.domain.entity.Conductor;
+import app_jwt.auth_service.domain.entity.Empresa;
 import app_jwt.auth_service.domain.entity.Usuario;
 import app_jwt.auth_service.domain.enums.EstadoConductor;
 import app_jwt.auth_service.domain.enums.Role;
 import app_jwt.auth_service.domain.enums.TurnoConductor;
 import app_jwt.auth_service.infra.repository.BusRepository;
 import app_jwt.auth_service.infra.repository.ConductorRepository;
+import app_jwt.auth_service.infra.repository.EmpresaRepository;
 import app_jwt.auth_service.infra.repository.UsuarioRepository;
 import app_jwt.auth_service.infra.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,9 +36,22 @@ public class ConductorService {
     private final BusRepository busRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityUtils securityUtils;
+    private final EmpresaRepository empresaRepository;
 
     @Transactional
     public ConductorCreatedResponse createConductor(CreateConductorRequest request, Long empresaId) {
+
+        if (empresaId == null) {
+            throw new RuntimeException("ID de empresa es requerido");
+        }
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        if (!empresa.getActivo()) {
+            throw new RuntimeException("La empresa no está activa");
+        }
+
         String email = request.getEmail().toLowerCase(Locale.ROOT).trim();
 
         if (usuarioRepository.findByCorreo(email).isPresent()) {
@@ -63,11 +79,22 @@ public class ConductorService {
 
         Usuario savedUsuario = usuarioRepository.save(usuario);
 
+        if (conductorRepository.existsByUsuarioIdAndActivoTrue(savedUsuario.getId())) {
+            throw new RuntimeException("El usuario ya es conductor");
+        }
+
         Bus busAsignado = null;
         if (request.getBusAsignadoId() != null) {
             busAsignado = busRepository.findById(request.getBusAsignadoId())
                     .orElseThrow(() -> new RuntimeException("Bus no encontrado"));
-            securityUtils.validateEmpresaAccess(busAsignado.getEmpresaId(), empresaId, "bus");
+
+            if (!busAsignado.getEmpresaId().equals(empresaId)) {
+                throw new RuntimeException("El bus no pertenece a esta empresa");
+            }
+
+            if (conductorRepository.existsByBusAsignadoIdAndActivoTrue(request.getBusAsignadoId())) {
+                throw new RuntimeException("El bus ya está asignado a otro conductor");
+            }
         }
 
         Conductor conductor = Conductor.builder()
@@ -85,8 +112,10 @@ public class ConductorService {
 
         Conductor savedConductor = conductorRepository.save(conductor);
 
+        ConductorResponse conductorResponse = ConductorResponse.fromWithEmpresa(savedConductor, empresa.getNombre());
+
         return ConductorCreatedResponse.builder()
-                .conductor(ConductorResponse.from(savedConductor))
+                .conductor(conductorResponse)
                 .username(username)
                 .tempPassword(tempPasswordRaw)
                 .build();
@@ -94,34 +123,52 @@ public class ConductorService {
 
     @Transactional(readOnly = true)
     public Page<ConductorResponse> getConductores(Long empresaId, Pageable pageable) {
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
         Page<Conductor> conductores = conductorRepository.findByEmpresaIdAndActivoTrue(empresaId, pageable);
-        return conductores.map(ConductorResponse::from);
+        return conductores.map(conductor -> ConductorResponse.fromWithEmpresa(conductor, empresa.getNombre()));
     }
 
     @Transactional(readOnly = true)
     public Page<ConductorResponse> searchConductores(Long empresaId, String searchTerm, Pageable pageable) {
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
         Page<Conductor> conductores = conductorRepository.searchConductores(empresaId, searchTerm, pageable);
-        return conductores.map(ConductorResponse::from);
+        return conductores.map(conductor -> ConductorResponse.fromWithEmpresa(conductor, empresa.getNombre()));
     }
 
     @Transactional(readOnly = true)
     public ConductorResponse getConductorById(Long conductorId, Long empresaId) {
         Conductor conductor = conductorRepository.findById(conductorId)
                 .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
-        securityUtils.validateEmpresaAccess(conductor.getEmpresaId(), empresaId, "conductor");
-        if (!conductor.getActivo()) {
+
+        if (!conductor.getEmpresaId().equals(empresaId)) {
             throw new RuntimeException("No tiene permisos para acceder a este conductor");
         }
-        return ConductorResponse.from(conductor);
+
+        if (!conductor.getActivo()) {
+            throw new RuntimeException("Conductor no disponible");
+        }
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        return ConductorResponse.fromWithEmpresa(conductor, empresa.getNombre());
     }
 
     @Transactional
     public ConductorResponse updateConductor(Long conductorId, UpdateConductorRequest request, Long empresaId) {
         Conductor conductor = conductorRepository.findById(conductorId)
                 .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
-        securityUtils.validateEmpresaAccess(conductor.getEmpresaId(), empresaId, "conductor");
-        if (!conductor.getActivo()) {
+
+        if (!conductor.getEmpresaId().equals(empresaId)) {
             throw new RuntimeException("No tiene permisos para modificar este conductor");
+        }
+
+        if (!conductor.getActivo()) {
+            throw new RuntimeException("No puede modificar este conductor");
         }
 
         if (request.getTelefono() != null) {
@@ -139,19 +186,31 @@ public class ConductorService {
         if (request.getBusAsignadoId() != null) {
             Bus bus = busRepository.findById(request.getBusAsignadoId())
                     .orElseThrow(() -> new RuntimeException("Bus no encontrado"));
-            securityUtils.validateEmpresaAccess(bus.getEmpresaId(), empresaId, "bus");
+
+            if (!bus.getEmpresaId().equals(empresaId)) {
+                throw new RuntimeException("El bus no pertenece a esta empresa");
+            }
+
             conductor.setBusAsignado(bus);
         }
 
         Conductor updatedConductor = conductorRepository.save(conductor);
-        return ConductorResponse.from(updatedConductor);
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        return ConductorResponse.fromWithEmpresa(updatedConductor, empresa.getNombre());
     }
 
     @Transactional
     public void deleteConductor(Long conductorId, Long empresaId) {
         Conductor conductor = conductorRepository.findById(conductorId)
                 .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
-        securityUtils.validateEmpresaAccess(conductor.getEmpresaId(), empresaId, "conductor");
+
+        if (!conductor.getEmpresaId().equals(empresaId)) {
+            throw new RuntimeException("No tiene permisos para eliminar este conductor");
+        }
+
         conductor.setActivo(false);
         conductorRepository.save(conductor);
     }
@@ -160,54 +219,104 @@ public class ConductorService {
     public ConductorResponse cambiarEstado(Long conductorId, EstadoConductor estado, Long empresaId) {
         Conductor conductor = conductorRepository.findById(conductorId)
                 .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
-        securityUtils.validateEmpresaAccess(conductor.getEmpresaId(), empresaId, "conductor");
+
+        if (!conductor.getEmpresaId().equals(empresaId)) {
+            throw new RuntimeException("No tiene permisos para modificar este conductor");
+        }
+
         if (!conductor.getActivo()) {
             throw new RuntimeException("No tiene permisos para modificar este conductor");
         }
+
         conductor.setEstado(estado);
         Conductor updatedConductor = conductorRepository.save(conductor);
-        return ConductorResponse.from(updatedConductor);
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        return ConductorResponse.fromWithEmpresa(updatedConductor, empresa.getNombre());
     }
 
     @Transactional
     public ConductorResponse asignarBus(Long conductorId, Long busId, Long empresaId) {
         Conductor conductor = conductorRepository.findById(conductorId)
                 .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
-        securityUtils.validateEmpresaAccess(conductor.getEmpresaId(), empresaId, "conductor");
+
+        if (!conductor.getEmpresaId().equals(empresaId)) {
+            throw new RuntimeException("No tiene permisos para modificar este conductor");
+        }
+
         if (!conductor.getActivo()) {
             throw new RuntimeException("No tiene permisos para modificar este conductor");
         }
+
         Bus bus = busRepository.findById(busId)
                 .orElseThrow(() -> new RuntimeException("Bus no encontrado"));
-        securityUtils.validateEmpresaAccess(bus.getEmpresaId(), empresaId, "bus");
+
+        if (!bus.getEmpresaId().equals(empresaId)) {
+            throw new RuntimeException("El bus no pertenece a esta empresa");
+        }
+
+        Optional<Conductor> conductorConBus = conductorRepository.findByBusAsignadoIdAndActivoTrue(busId);
+        if (conductorConBus.isPresent() && !conductorConBus.get().getId().equals(conductorId)) {
+            throw new RuntimeException("El bus ya está asignado a otro conductor");
+        }
+
+        if (conductor.getBusAsignado() != null && !conductor.getBusAsignado().getId().equals(busId)) {
+            throw new RuntimeException("El conductor ya tiene un bus asignado. Debe removerlo primero");
+        }
+
         conductor.setBusAsignado(bus);
         Conductor updatedConductor = conductorRepository.save(conductor);
-        return ConductorResponse.from(updatedConductor);
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        return ConductorResponse.fromWithEmpresa(updatedConductor, empresa.getNombre());
     }
 
     @Transactional
     public ConductorResponse removerBus(Long conductorId, Long empresaId) {
         Conductor conductor = conductorRepository.findById(conductorId)
                 .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
-        securityUtils.validateEmpresaAccess(conductor.getEmpresaId(), empresaId, "conductor");
+
+        if (!conductor.getEmpresaId().equals(empresaId)) {
+            throw new RuntimeException("No tiene permisos para modificar este conductor");
+        }
+
         if (!conductor.getActivo()) {
             throw new RuntimeException("No tiene permisos para modificar este conductor");
         }
+
         conductor.setBusAsignado(null);
         Conductor updatedConductor = conductorRepository.save(conductor);
-        return ConductorResponse.from(updatedConductor);
+
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
+        return ConductorResponse.fromWithEmpresa(updatedConductor, empresa.getNombre());
     }
 
     @Transactional(readOnly = true)
     public List<ConductorResponse> getConductoresByEstado(Long empresaId, EstadoConductor estado) {
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
         List<Conductor> conductores = conductorRepository.findByEmpresaIdAndEstadoAndActivoTrue(empresaId, estado);
-        return conductores.stream().map(ConductorResponse::from).collect(Collectors.toList());
+        return conductores.stream()
+                .map(conductor -> ConductorResponse.fromWithEmpresa(conductor, empresa.getNombre()))
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public List<ConductorResponse> getConductoresByTurno(Long empresaId, TurnoConductor turno) {
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
+
         List<Conductor> conductores = conductorRepository.findByEmpresaIdAndTurnoAndActivoTrue(empresaId, turno);
-        return conductores.stream().map(ConductorResponse::from).collect(Collectors.toList());
+        return conductores.stream()
+                .map(conductor -> ConductorResponse.fromWithEmpresa(conductor, empresa.getNombre()))
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

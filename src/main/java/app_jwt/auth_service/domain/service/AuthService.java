@@ -4,9 +4,12 @@ import app_jwt.auth_service.domain.dtos.auth.AuthResponse;
 import app_jwt.auth_service.domain.dtos.auth.LoginRequest;
 import app_jwt.auth_service.domain.dtos.auth.RegisterRequest;
 import app_jwt.auth_service.domain.dtos.auth.UserResponse;
+import app_jwt.auth_service.domain.entity.Bus;
+import app_jwt.auth_service.domain.entity.Conductor;
 import app_jwt.auth_service.domain.entity.Empresa;
 import app_jwt.auth_service.domain.entity.Usuario;
 import app_jwt.auth_service.domain.enums.Role;
+import app_jwt.auth_service.infra.repository.ConductorRepository;
 import app_jwt.auth_service.infra.repository.EmpresaRepository;
 import app_jwt.auth_service.infra.repository.UsuarioRepository;
 import app_jwt.auth_service.infra.security.JwtService;
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -28,6 +32,7 @@ public class AuthService {
 
     private final UsuarioRepository usuarioRepository;
     private final EmpresaRepository empresaRepository;
+    private final ConductorRepository conductorRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -38,7 +43,6 @@ public class AuthService {
 
         Long nuevaEmpresaId = generateUniqueEmpresaId();
 
-        // Crear registro de empresa
         Empresa empresa = Empresa.builder()
                 .id(nuevaEmpresaId)
                 .nombre(request.getNombreEmpresa() != null ?
@@ -52,7 +56,6 @@ public class AuthService {
 
         empresaRepository.save(empresa);
 
-        // Crear usuario administrador de la empresa
         Usuario usuario = Usuario.builder()
                 .username(request.getEmail())
                 .correo(request.getEmail())
@@ -67,7 +70,7 @@ public class AuthService {
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
         String token = jwtService.getToken(usuarioGuardado, usuarioGuardado);
-        UserResponse userResponse = UserResponse.from(usuarioGuardado);
+        UserResponse userResponse = createUserResponseWithBusInfo(usuarioGuardado);
 
         return AuthResponse.success(token, userResponse);
     }
@@ -94,13 +97,42 @@ public class AuthService {
             );
 
             String token = jwtService.getToken(usuario, usuario);
-            UserResponse userResponse = UserResponse.from(usuario);
+            UserResponse userResponse = createUserResponseWithBusInfo(usuario);
 
             return AuthResponse.success(token, userResponse);
 
         } catch (AuthenticationException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
+    }
+
+    private UserResponse createUserResponseWithBusInfo(Usuario usuario) {
+        UserResponse.UserResponseBuilder builder = UserResponse.builder()
+                .id(usuario.getId())
+                .empresaId(usuario.getEmpresaId())
+                .nombre(usuario.getNombre())
+                .apellido(usuario.getApellido())
+                .dni(usuario.getDni())
+                .telefono(usuario.getTelefono())
+                .correo(usuario.getCorreo())
+                .username(usuario.getUsername())
+                .role(usuario.getRole());
+
+        if (usuario.getRole() == Role.CHOFER) {
+            try {
+                Optional<Conductor> conductor = conductorRepository.findByUsuarioIdAndActivoTrue(usuario.getId());
+                if (conductor.isPresent() && conductor.get().getBusAsignado() != null) {
+                    Bus bus = conductor.get().getBusAsignado();
+                    builder.busId(bus.getId().toString())
+                            .busPlate(bus.getPlaca())
+                            .busNumber(bus.getPlaca());
+                }
+            } catch (Exception e) {
+                // Continúa sin datos del bus en caso de error
+            }
+        }
+
+        return builder.build();
     }
 
     private void validateRegisterRequest(RegisterRequest request) {
@@ -123,7 +155,6 @@ public class AuthService {
         int hashCode = UUID.randomUUID().toString().hashCode();
         long empresaId = Math.abs(timestamp + hashCode);
 
-        // Verificar que no exista en ninguna de las dos tablas
         int intentos = 0;
         while ((empresaRepository.existsById(empresaId) ||
                 usuarioRepository.findByEmpresaId(empresaId).isPresent()) && intentos < 10) {
@@ -138,6 +169,7 @@ public class AuthService {
 
         return empresaId;
     }
+
     @Transactional(readOnly = true)
     public Usuario getUsuarioByEmail(String email) {
         return usuarioRepository.findByCorreo(email)

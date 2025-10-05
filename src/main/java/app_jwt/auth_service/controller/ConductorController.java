@@ -1,4 +1,3 @@
-// src/main/java/app_jwt/auth_service/controller/ConductorController.java
 package app_jwt.auth_service.controller;
 
 import app_jwt.auth_service.domain.dtos.bus.ApiResponse;
@@ -33,7 +32,10 @@ public class ConductorController {
     public ResponseEntity<ConductorCreatedResponse> createConductor(
             @Valid @RequestBody CreateConductorRequest request,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         ConductorCreatedResponse response = conductorService.createConductor(request, empresaId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -42,7 +44,10 @@ public class ConductorController {
     public ResponseEntity<Page<ConductorResponse>> getConductores(
             Authentication authentication,
             @PageableDefault(size = 20) Pageable pageable) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         Page<ConductorResponse> conductores = conductorService.getConductores(empresaId, pageable);
         return ResponseEntity.ok(conductores);
     }
@@ -52,7 +57,10 @@ public class ConductorController {
             @RequestParam(required = false) String q,
             Authentication authentication,
             @PageableDefault(size = 20) Pageable pageable) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         Page<ConductorResponse> conductores = conductorService.searchConductores(empresaId, q, pageable);
         return ResponseEntity.ok(conductores);
     }
@@ -61,7 +69,10 @@ public class ConductorController {
     public ResponseEntity<ConductorResponse> getConductorById(
             @PathVariable Long conductorId,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         ConductorResponse conductor = conductorService.getConductorById(conductorId, empresaId);
         return ResponseEntity.ok(conductor);
     }
@@ -71,7 +82,10 @@ public class ConductorController {
             @PathVariable Long conductorId,
             @Valid @RequestBody UpdateConductorRequest request,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         ConductorResponse response = conductorService.updateConductor(conductorId, request, empresaId);
         return ResponseEntity.ok(response);
     }
@@ -80,7 +94,10 @@ public class ConductorController {
     public ResponseEntity<ApiResponse> deleteConductor(
             @PathVariable Long conductorId,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         conductorService.deleteConductor(conductorId, empresaId);
         return ResponseEntity.ok(new ApiResponse("Conductor eliminado exitosamente", true));
     }
@@ -90,7 +107,10 @@ public class ConductorController {
             @PathVariable Long conductorId,
             @RequestParam EstadoConductor estado,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         ConductorResponse response = conductorService.cambiarEstado(conductorId, estado, empresaId);
         return ResponseEntity.ok(response);
     }
@@ -100,7 +120,10 @@ public class ConductorController {
             @PathVariable Long conductorId,
             @RequestParam Long busId,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         ConductorResponse response = conductorService.asignarBus(conductorId, busId, empresaId);
         return ResponseEntity.ok(response);
     }
@@ -109,7 +132,10 @@ public class ConductorController {
     public ResponseEntity<ConductorResponse> removerBus(
             @PathVariable Long conductorId,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         ConductorResponse response = conductorService.removerBus(conductorId, empresaId);
         return ResponseEntity.ok(response);
     }
@@ -118,7 +144,10 @@ public class ConductorController {
     public ResponseEntity<List<ConductorResponse>> getConductoresByEstado(
             @PathVariable EstadoConductor estado,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         List<ConductorResponse> conductores = conductorService.getConductoresByEstado(empresaId, estado);
         return ResponseEntity.ok(conductores);
     }
@@ -127,14 +156,19 @@ public class ConductorController {
     public ResponseEntity<List<ConductorResponse>> getConductoresByTurno(
             @PathVariable TurnoConductor turno,
             Authentication authentication) {
+
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         List<ConductorResponse> conductores = conductorService.getConductoresByTurno(empresaId, turno);
         return ResponseEntity.ok(conductores);
     }
 
     @GetMapping("/stats")
     public ResponseEntity<ConductorStatsResponse> getStats(Authentication authentication) {
+        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
+
         ConductorStatsResponse stats = conductorService.getStats(empresaId);
         return ResponseEntity.ok(stats);
     }
