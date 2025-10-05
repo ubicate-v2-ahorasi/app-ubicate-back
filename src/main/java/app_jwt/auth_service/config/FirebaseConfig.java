@@ -1,3 +1,4 @@
+// src/main/java/app_jwt/auth_service/config/FirebaseConfig.java
 package app_jwt.auth_service.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
@@ -8,17 +9,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
-import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Base64;
+import java.io.InputStream;
 
 @Configuration
 @Slf4j
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials.base64:}")
-    private String credentialsBase64;
+    @Value("${firebase.credentials.path:}")
+    private String credentialsPath;
 
     @Value("${firebase.database.url}")
     private String databaseUrl;
@@ -27,18 +29,26 @@ public class FirebaseConfig {
     public FirebaseApp initializeFirebase() throws IOException {
         if (FirebaseApp.getApps().isEmpty()) {
 
-            if (credentialsBase64 == null || credentialsBase64.trim().isEmpty()) {
+            if (credentialsPath == null || credentialsPath.trim().isEmpty()) {
                 log.warn("Firebase credentials not found - Firebase will not be initialized");
                 return null;
             }
 
             try {
-                // Decodificar las credenciales desde base64
-                byte[] decodedCredentials = Base64.getDecoder().decode(credentialsBase64);
-                ByteArrayInputStream credentialsStream = new ByteArrayInputStream(decodedCredentials);
+                InputStream serviceAccount;
+
+                // Intentar cargar desde classpath primero
+                try {
+                    serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
+                    log.info("Cargando credenciales Firebase desde classpath");
+                } catch (Exception e) {
+                    // Si no está en classpath, intentar desde ruta absoluta
+                    serviceAccount = new FileInputStream(credentialsPath);
+                    log.info("Cargando credenciales Firebase desde: {}", credentialsPath);
+                }
 
                 FirebaseOptions options = FirebaseOptions.builder()
-                        .setCredentials(GoogleCredentials.fromStream(credentialsStream))
+                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                         .setDatabaseUrl(databaseUrl)
                         .build();
 
@@ -48,7 +58,8 @@ public class FirebaseConfig {
 
             } catch (Exception e) {
                 log.error("Error al inicializar Firebase: {}", e.getMessage());
-                throw new IOException("Failed to initialize Firebase", e);
+                log.warn("Firebase will not be available - continuing without Firebase");
+                return null;
             }
         }
         return FirebaseApp.getInstance();

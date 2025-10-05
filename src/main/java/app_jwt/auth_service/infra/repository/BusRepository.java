@@ -51,4 +51,10 @@ public interface BusRepository extends JpaRepository<Bus, Long> {
 
     @Query("SELECT b FROM Bus b LEFT JOIN FETCH b.rutaAsignada WHERE b.activo = true AND b.latitud IS NOT NULL AND b.longitud IS NOT NULL")
     List<Bus> findAllActivoTrueAndLatitudIsNotNullWithRoute();
+
+
+    Optional<Bus> findByPlacaAndActivoTrue(String placa);
+
+    @Query("SELECT b FROM Bus b JOIN FETCH b.rutaAsignada r WHERE b.placa = :placa AND b.activo = true")
+    Optional<Bus> findByPlacaWithRoute(@Param("placa") String placa);
 }
