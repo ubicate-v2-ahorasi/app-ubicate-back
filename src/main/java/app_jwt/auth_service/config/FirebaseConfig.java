@@ -9,15 +9,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Base64;
 
 @Configuration
 @Slf4j
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials.path}")
-    private String credentialsPath;
+    @Value("${firebase.credentials.base64:}")
+    private String credentialsBase64;
 
     @Value("${firebase.database.url}")
     private String databaseUrl;
@@ -25,22 +26,40 @@ public class FirebaseConfig {
     @Bean
     public FirebaseApp initializeFirebase() throws IOException {
         if (FirebaseApp.getApps().isEmpty()) {
-            FileInputStream serviceAccount = new FileInputStream(credentialsPath);
 
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .setDatabaseUrl(databaseUrl)
-                    .build();
+            if (credentialsBase64 == null || credentialsBase64.trim().isEmpty()) {
+                log.warn("Firebase credentials not found - Firebase will not be initialized");
+                return null;
+            }
 
-            FirebaseApp app = FirebaseApp.initializeApp(options);
-            log.info("Firebase inicializado correctamente");
-            return app;
+            try {
+                // Decodificar las credenciales desde base64
+                byte[] decodedCredentials = Base64.getDecoder().decode(credentialsBase64);
+                ByteArrayInputStream credentialsStream = new ByteArrayInputStream(decodedCredentials);
+
+                FirebaseOptions options = FirebaseOptions.builder()
+                        .setCredentials(GoogleCredentials.fromStream(credentialsStream))
+                        .setDatabaseUrl(databaseUrl)
+                        .build();
+
+                FirebaseApp app = FirebaseApp.initializeApp(options);
+                log.info("Firebase inicializado correctamente");
+                return app;
+
+            } catch (Exception e) {
+                log.error("Error al inicializar Firebase: {}", e.getMessage());
+                throw new IOException("Failed to initialize Firebase", e);
+            }
         }
         return FirebaseApp.getInstance();
     }
 
     @Bean
     public FirebaseDatabase firebaseDatabase(FirebaseApp firebaseApp) {
+        if (firebaseApp == null) {
+            log.warn("FirebaseApp is null - FirebaseDatabase will not be available");
+            return null;
+        }
         return FirebaseDatabase.getInstance(firebaseApp);
     }
 }
