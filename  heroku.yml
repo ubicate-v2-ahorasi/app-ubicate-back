@@ -1,0 +1,12 @@
+setup:
+  addons:
+    - plan: jawsdb:kitefin
+  config:
+    SPRING_PROFILES_ACTIVE: prod
+
+build:
+  docker:
+    web: Dockerfile
+
+run:
+  web: java -Dserver.port=$PORT -Dspring.profiles.active=prod -jar app.jar

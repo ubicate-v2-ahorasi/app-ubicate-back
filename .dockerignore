@@ -1,0 +1,16 @@
+# Excluir todo de target EXCEPTO el JAR
+target/*
+!target/*.jar
+
+# Resto de exclusiones
+.mvn/wrapper/
+.idea/
+*.iml
+.vscode/
+.git/
+README.md
+docker-compose.yml
+*.md
+.gitignore
+node_modules/
+src/test/

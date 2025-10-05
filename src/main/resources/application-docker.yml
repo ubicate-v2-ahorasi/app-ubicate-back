@@ -1,0 +1,88 @@
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: jdbc:mysql://db:3306/auth-jwt?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        use_sql_comments: false
+        generate_statistics: false
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+  jackson:
+    serialization:
+      FAIL_ON_EMPTY_BEANS: false
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: NON_NULL
+
+server:
+  address: 0.0.0.0
+  port: 8080
+  error:
+    include-stacktrace: never
+    include-message: always
+  compression:
+    enabled: true
+    mime-types: application/json,text/css,text/html,application/javascript
+    min-response-size: 1024
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:36000000}
+
+firebase:
+  credentials:
+    path: ${FIREBASE_CREDENTIALS_PATH}
+  database:
+    url: ${FIREBASE_DATABASE_URL}
+
+mfa:
+  issuer: ${MFA_ISSUER:AuthApp-JWT}
+
+cors:
+  allowed-origins: ${CORS_ORIGINS}
+  allowed-methods: ${CORS_METHODS:GET,POST,PUT,DELETE,OPTIONS}
+  allowed-headers: ${CORS_HEADERS:Authorization,Content-Type,X-Requested-With}
+  allow-credentials: true
+  max-age: 3600
+
+logging:
+  level:
+    root: INFO
+    app_jwt.auth_service: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.web: WARN
+    com.zaxxer.hikari: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
