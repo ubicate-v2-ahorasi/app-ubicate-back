@@ -1,4 +1,3 @@
-// src/main/java/app_jwt/auth_service/config/FirebaseConfig.java
 package app_jwt.auth_service.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
@@ -11,38 +10,58 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Base64;
 
 @Configuration
 @Slf4j
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials.path:src/main/resources/firebase-service-account.json}")
+    @Value("${firebase.credentials.base64:}")
+    private String credentialsBase64;
+
+    @Value("${firebase.credentials.path:}")
     private String credentialsPath;
 
-    @Value("${firebase.database.url:https://ubicate-4271d-default-rtdb.firebaseio.com}")
+    @Value("${firebase.database.url}")
     private String databaseUrl;
 
     @Bean
     public FirebaseApp initializeFirebase() {
         log.info("🔥 INICIANDO CONFIGURACIÓN FIREBASE");
-        log.info("🔥 credentialsPath: {}", credentialsPath);
         log.info("🔥 databaseUrl: {}", databaseUrl);
 
         try {
             if (FirebaseApp.getApps().isEmpty()) {
-                InputStream serviceAccount;
+                InputStream serviceAccount = null;
 
-                try {
-                    // Intentar desde classpath primero
-                    serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
-                    log.info("✅ Credenciales cargadas desde classpath");
-                } catch (Exception e) {
-                    // Intentar desde ruta absoluta
-                    serviceAccount = new FileInputStream(credentialsPath);
-                    log.info("✅ Credenciales cargadas desde: {}", credentialsPath);
+                // PRIORIDAD 1: Base64 (HEROKU)
+                if (credentialsBase64 != null && !credentialsBase64.isEmpty()) {
+                    try {
+                        byte[] decodedBytes = Base64.getDecoder().decode(credentialsBase64);
+                        serviceAccount = new ByteArrayInputStream(decodedBytes);
+                        log.info("✅ Credenciales cargadas desde Base64 (Heroku)");
+                    } catch (Exception e) {
+                        log.error("❌ Error decodificando Base64: {}", e.getMessage());
+                    }
+                }
+
+                // PRIORIDAD 2: Classpath (LOCAL)
+                if (serviceAccount == null) {
+                    try {
+                        serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
+                        log.info("✅ Credenciales cargadas desde classpath (Local)");
+                    } catch (Exception e) {
+                        log.warn("⚠️ No se encontró firebase-service-account.json en classpath");
+                    }
+                }
+
+                // Si no hay credenciales, devolver null
+                if (serviceAccount == null) {
+                    log.warn("❌ No se encontraron credenciales de Firebase");
+                    log.warn("🔄 Continuando sin Firebase");
+                    return null;
                 }
 
                 FirebaseOptions options = FirebaseOptions.builder()
@@ -57,17 +76,15 @@ public class FirebaseConfig {
             return FirebaseApp.getInstance();
         } catch (Exception e) {
             log.error("❌ Error al inicializar Firebase: {}", e.getMessage());
-            log.warn("🔄 Continuando sin Firebase - funcionará en modo MySQL solamente");
+            log.warn("🔄 Continuando sin Firebase");
             return null;
         }
     }
 
     @Bean
     public FirebaseDatabase firebaseDatabase(FirebaseApp firebaseApp) {
-        log.info("🔥 CREANDO FIREBASE DATABASE");
-
         if (firebaseApp == null) {
-            log.warn("❌ FirebaseApp es null - FirebaseDatabase NO estará disponible");
+            log.warn("❌ FirebaseApp es null - FirebaseDatabase NO disponible");
             return null;
         }
 

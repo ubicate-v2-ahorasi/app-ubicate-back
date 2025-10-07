@@ -52,9 +52,10 @@ jwt:
 
 firebase:
   credentials:
-    path: ${FIREBASE_CREDENTIALS_PATH:src/main/resources/firebase-service-account.json}
+    path: ${FIREBASE_CREDENTIALS_PATH:}
+    base64: ${FIREBASE_CREDENTIALS_BASE64:}
   database:
-    url: ${FIREBASE_DATABASE_URL:https://flutter-firebase-e2cf0-default-rtdb.firebaseio.com}
+    url: ${FIREBASE_DATABASE_URL:https://ubicate-4271d-default-rtdb.firebaseio.com}
 
 mfa:
   issuer: ${MFA_ISSUER:AuthApp-JWT}
@@ -86,122 +87,3 @@ management:
   endpoint:
     health:
       show-details: when-authorized
-
----
-
-# PERFIL DE DESARROLLO
-spring:
-  config:
-    activate:
-      on-profile: dev
-
-  jpa:
-    show-sql: false
-    properties:
-      hibernate:
-        format_sql: true
-
-firebase:
-  credentials:
-    path: src/main/resources/firebase-service-account.json
-  database:
-    url: https://flutter-firebase-e2cf0-default-rtdb.firebaseio.com
-
-
-logging:
-  level:
-    app_jwt.auth_service: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-
----
-
-# PERFIL DE PRODUCCIÓN
-spring:
-  config:
-    activate:
-      on-profile: prod
-
-  datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/auth-jwt}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 10
-      leak-detection-threshold: 60000
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        format_sql: false
-        use_sql_comments: false
-
-firebase:
-  credentials:
-    path: ${FIREBASE_CREDENTIALS_PATH}
-  database:
-    url: ${FIREBASE_DATABASE_URL}
-
-server:
-  error:
-    include-stacktrace: never
-    include-message: false
-
-logging:
-  level:
-    root: WARN
-    app_jwt.auth_service: INFO
-    org.hibernate: ERROR
-    org.springframework: WARN
-  file:
-    name: ./logs/auth-service.log
-    max-size: 10MB
-    max-history: 30
-  pattern:
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    console: "%d{HH:mm:ss} %-5level %logger{36} - %msg%n"
-
-cors:
-  allowed-origins: ${CORS_ORIGINS}
-  allow-credentials: true
-
----
-# PERFIL DE TESTING
-spring:
-  config:
-    activate:
-      on-profile: test
-
-  datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: false
-    database-platform: org.hibernate.dialect.H2Dialect
-
-  h2:
-    console:
-      enabled: true
-
-# Firebase deshabilitado en testing (opcional)
-firebase:
-  credentials:
-    path: ""
-  database:
-    url: ""
-
-logging:
-  level:
-    root: WARN
-    app_jwt.auth_service: INFO
-    org.hibernate: WARN
-    org.springframework.test: INFO
