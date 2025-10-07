@@ -50,12 +50,11 @@ jwt:
   secret: ${JWT_SECRET:586E3272357538782F413F4428472B4B6250655368566B597033733676397924423F4528482B4D6251655468576D5A7134743777217A25432A462D4A614E645267556B58703273357638792F423F4528472B4B6250655368566D597133733676397924}
   expiration: ${JWT_EXPIRATION:36000000}
 
-# CONFIGURACIÓN FIREBASE
 firebase:
   credentials:
     path: ${FIREBASE_CREDENTIALS_PATH:src/main/resources/firebase-service-account.json}
   database:
-    url: ${FIREBASE_DATABASE_URL:https://ubicate-4271d-default-rtdb.firebaseio.com}
+    url: ${FIREBASE_DATABASE_URL:https://flutter-firebase-e2cf0-default-rtdb.firebaseio.com}
 
 mfa:
   issuer: ${MFA_ISSUER:AuthApp-JWT}
@@ -106,7 +105,8 @@ firebase:
   credentials:
     path: src/main/resources/firebase-service-account.json
   database:
-    url: https://ubicate-4271d-default-rtdb.firebaseio.com
+    url: https://flutter-firebase-e2cf0-default-rtdb.firebaseio.com
+
 
 logging:
   level:

@@ -84,7 +84,23 @@ public class BusService {
         return busRepository.findByRutaAsignadaAndActivoTrue(ruta, pageable)
                 .map(BusResponse::from);
     }
+    @Transactional(readOnly = true)
+    public List<BusResponse> getBusesByRuta(Long rutaId, Long empresaId) {
+        Route ruta = routeRepository.findById(rutaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ruta no encontrada"));
 
+        securityUtils.validateEmpresaAccess(ruta.getEmpresaId(), empresaId, "ruta");
+
+        if (!Boolean.TRUE.equals(ruta.getActivo())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permisos para acceder a esta ruta");
+        }
+
+        return busRepository.findByRutaAsignadaAndActivoTrue(ruta, Pageable.unpaged())
+                .getContent()
+                .stream()
+                .map(BusResponse::from)
+                .collect(Collectors.toList());
+    }
     @Transactional(readOnly = true)
     public List<BusResponse> getBusesByEstado(Long empresaId, EstadoBus estado) {
         return busRepository.findByEmpresaIdAndEstadoAndActivoTrueWithRoute(empresaId, estado)

@@ -19,32 +19,30 @@ import java.io.InputStream;
 @Slf4j
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials.path:}")
+    @Value("${firebase.credentials.path:src/main/resources/firebase-service-account.json}")
     private String credentialsPath;
 
-    @Value("${firebase.database.url}")
+    @Value("${firebase.database.url:https://ubicate-4271d-default-rtdb.firebaseio.com}")
     private String databaseUrl;
 
     @Bean
-    public FirebaseApp initializeFirebase() throws IOException {
-        if (FirebaseApp.getApps().isEmpty()) {
+    public FirebaseApp initializeFirebase() {
+        log.info("🔥 INICIANDO CONFIGURACIÓN FIREBASE");
+        log.info("🔥 credentialsPath: {}", credentialsPath);
+        log.info("🔥 databaseUrl: {}", databaseUrl);
 
-            if (credentialsPath == null || credentialsPath.trim().isEmpty()) {
-                log.warn("Firebase credentials not found - Firebase will not be initialized");
-                return null;
-            }
-
-            try {
+        try {
+            if (FirebaseApp.getApps().isEmpty()) {
                 InputStream serviceAccount;
 
-                // Intentar cargar desde classpath primero
                 try {
+                    // Intentar desde classpath primero
                     serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
-                    log.info("Cargando credenciales Firebase desde classpath");
+                    log.info("✅ Credenciales cargadas desde classpath");
                 } catch (Exception e) {
-                    // Si no está en classpath, intentar desde ruta absoluta
+                    // Intentar desde ruta absoluta
                     serviceAccount = new FileInputStream(credentialsPath);
-                    log.info("Cargando credenciales Firebase desde: {}", credentialsPath);
+                    log.info("✅ Credenciales cargadas desde: {}", credentialsPath);
                 }
 
                 FirebaseOptions options = FirebaseOptions.builder()
@@ -53,24 +51,33 @@ public class FirebaseConfig {
                         .build();
 
                 FirebaseApp app = FirebaseApp.initializeApp(options);
-                log.info("Firebase inicializado correctamente");
+                log.info("✅ Firebase inicializado correctamente");
                 return app;
-
-            } catch (Exception e) {
-                log.error("Error al inicializar Firebase: {}", e.getMessage());
-                log.warn("Firebase will not be available - continuing without Firebase");
-                return null;
             }
+            return FirebaseApp.getInstance();
+        } catch (Exception e) {
+            log.error("❌ Error al inicializar Firebase: {}", e.getMessage());
+            log.warn("🔄 Continuando sin Firebase - funcionará en modo MySQL solamente");
+            return null;
         }
-        return FirebaseApp.getInstance();
     }
 
     @Bean
     public FirebaseDatabase firebaseDatabase(FirebaseApp firebaseApp) {
+        log.info("🔥 CREANDO FIREBASE DATABASE");
+
         if (firebaseApp == null) {
-            log.warn("FirebaseApp is null - FirebaseDatabase will not be available");
+            log.warn("❌ FirebaseApp es null - FirebaseDatabase NO estará disponible");
             return null;
         }
-        return FirebaseDatabase.getInstance(firebaseApp);
+
+        try {
+            FirebaseDatabase db = FirebaseDatabase.getInstance(firebaseApp);
+            log.info("✅ FirebaseDatabase creado exitosamente");
+            return db;
+        } catch (Exception e) {
+            log.error("❌ Error creando FirebaseDatabase: {}", e.getMessage());
+            return null;
+        }
     }
 }

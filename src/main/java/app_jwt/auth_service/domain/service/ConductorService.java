@@ -1,10 +1,7 @@
 package app_jwt.auth_service.domain.service;
 
 import app_jwt.auth_service.domain.dtos.conductor.*;
-import app_jwt.auth_service.domain.entity.Bus;
-import app_jwt.auth_service.domain.entity.Conductor;
-import app_jwt.auth_service.domain.entity.Empresa;
-import app_jwt.auth_service.domain.entity.Usuario;
+import app_jwt.auth_service.domain.entity.*;
 import app_jwt.auth_service.domain.enums.EstadoConductor;
 import app_jwt.auth_service.domain.enums.Role;
 import app_jwt.auth_service.domain.enums.TurnoConductor;
@@ -24,6 +21,7 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -371,4 +369,14 @@ public class ConductorService {
         for (int i = 0; i < len; i++) sb.append(chars.charAt(r.nextInt(chars.length())));
         return sb.toString();
     }
+
+    @Transactional(readOnly = true)
+    public DriverAssignmentResponse getMyAssignment(Long usuarioId) {
+        Conductor c = conductorRepository.findByUsuarioIdAndActivoTrue(usuarioId)
+                .orElseThrow(() -> new NoSuchElementException("Conductor no encontrado"));
+        Bus bus = c.getBusAsignado();
+        Route ruta = bus != null ? bus.getRutaAsignada() : null;
+        return DriverAssignmentResponse.of(c.getId(), bus, ruta);
+    }
+
 }
