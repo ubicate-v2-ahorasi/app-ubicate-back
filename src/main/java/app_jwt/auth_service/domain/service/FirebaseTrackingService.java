@@ -4,12 +4,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.database.*;
 import app_jwt.auth_service.domain.entity.Bus;
+import app_jwt.auth_service.domain.entity.Empresa;
 import app_jwt.auth_service.domain.entity.Usuario;
-import app_jwt.auth_service.domain.entity.Route;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +31,77 @@ public class FirebaseTrackingService {
         log.info("Token Firebase generado para usuario: {}", usuario.getId());
         return token;
     }
+
+    // ========== MÉTODOS PARA EMPRESAS ==========
+
+    /**
+     * Crea o actualiza el nodo de una empresa en Firebase
+     */
+    public void upsertEmpresa(Empresa empresa) {
+        try {
+            log.info("🔥 Registrando empresa {} ({}) en Firebase...", empresa.getId(), empresa.getNombre());
+
+            DatabaseReference empresaRef = firebaseDatabase.getReference()
+                    .child("empresas")
+                    .child(String.valueOf(empresa.getId()));
+
+            Map<String, Object> empresaData = new HashMap<>();
+            empresaData.put("id", empresa.getId());
+            empresaData.put("nombre", empresa.getNombre());
+            empresaData.put("ruc", empresa.getRuc());
+            empresaData.put("telefono", empresa.getTelefono());
+            empresaData.put("direccion", empresa.getDireccion());
+            empresaData.put("logo", empresa.getLogo());
+            empresaData.put("activo", empresa.getActivo());
+
+            // 🔧 CORREGIDO: Usar fechaCreacion en lugar de createdAt
+            empresaData.put("createdAt", empresa.getFechaCreacion() != null
+                    ? empresa.getFechaCreacion().toString()
+                    : LocalDateTime.now().toString());
+            empresaData.put("updatedAt", LocalDateTime.now().toString());
+
+            empresaRef.updateChildren(empresaData, (error, ref) -> {
+                if (error != null) {
+                    log.error("❌ Error al registrar empresa {} en Firebase: {}", empresa.getId(), error.getMessage());
+                } else {
+                    log.info("✅ Empresa {} ({}) registrada en Firebase exitosamente", empresa.getId(), empresa.getNombre());
+                }
+            });
+
+        } catch (Exception e) {
+            log.error("❌ Excepción al registrar empresa {} en Firebase: {}", empresa.getId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Desactiva una empresa en Firebase (solo cambia activo a false)
+     */
+    public void deactivateEmpresa(Long empresaId) {
+        try {
+            log.info("🔥 Desactivando empresa {} en Firebase...", empresaId);
+
+            DatabaseReference empresaRef = firebaseDatabase.getReference()
+                    .child("empresas")
+                    .child(String.valueOf(empresaId));
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("activo", false);
+            updates.put("updatedAt", LocalDateTime.now().toString());
+
+            empresaRef.updateChildren(updates, (error, ref) -> {
+                if (error != null) {
+                    log.error("❌ Error al desactivar empresa {} en Firebase: {}", empresaId, error.getMessage());
+                } else {
+                    log.info("✅ Empresa {} desactivada en Firebase", empresaId);
+                }
+            });
+
+        } catch (Exception e) {
+            log.error("❌ Excepción al desactivar empresa {} en Firebase: {}", empresaId, e.getMessage(), e);
+        }
+    }
+
+    // ========== MÉTODOS PARA BUSES ==========
 
     private DatabaseReference busRef(Long empresaId, Long busId) {
         return firebaseDatabase.getReference()
@@ -87,7 +159,6 @@ public class FirebaseTrackingService {
         });
     }
 
-
     public void updateBusConductor(Bus bus) {
         DatabaseReference ref = busRef(bus.getEmpresaId(), bus.getId());
         Map<String, Object> updates = new HashMap<>();
@@ -109,7 +180,9 @@ public class FirebaseTrackingService {
         });
     }
 
-    public void initializeBusLocation(Bus bus) { upsertBus(bus); }
+    public void initializeBusLocation(Bus bus) {
+        upsertBus(bus);
+    }
 
     public void deactivateBusLocation(Long empresaId, Long busId) {
         updateBusEstado(empresaId, busId, "INACTIVO", false);
@@ -126,14 +199,19 @@ public class FirebaseTrackingService {
         DatabaseReference ref = busRef(empresaId, busId);
         CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override public void onDataChange(DataSnapshot snapshot) {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
                 if (snapshot.exists()) {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> data = (Map<String, Object>) snapshot.getValue();
                     future.complete(data);
-                } else future.complete(null);
+                } else {
+                    future.complete(null);
+                }
             }
-            @Override public void onCancelled(DatabaseError error) {
+
+            @Override
+            public void onCancelled(DatabaseError error) {
                 log.error("Error obteniendo ubicación de Firebase: {}", error.getMessage());
                 future.completeExceptionally(new RuntimeException(error.getMessage()));
             }

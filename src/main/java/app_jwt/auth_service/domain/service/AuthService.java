@@ -14,6 +14,7 @@ import app_jwt.auth_service.infra.repository.EmpresaRepository;
 import app_jwt.auth_service.infra.repository.UsuarioRepository;
 import app_jwt.auth_service.infra.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j; // 🆕 AGREGAR
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,6 +29,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j // 🆕 AGREGAR para logging
 public class AuthService {
 
     private final UsuarioRepository usuarioRepository;
@@ -36,13 +38,18 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final FirebaseTrackingService firebaseTrackingService; // 🆕 AGREGAR
 
     @Transactional
     public AuthResponse registerEmpresa(RegisterRequest request) {
+        log.info("🔵 Iniciando registro de empresa para: {}", request.getEmail());
+
         validateRegisterRequest(request);
 
         Long nuevaEmpresaId = generateUniqueEmpresaId();
+        log.info("✅ ID generado para nueva empresa: {}", nuevaEmpresaId);
 
+        // 1. Crear empresa en MySQL
         Empresa empresa = Empresa.builder()
                 .id(nuevaEmpresaId)
                 .nombre(request.getNombreEmpresa() != null ?
@@ -54,8 +61,19 @@ public class AuthService {
                 .activo(true)
                 .build();
 
-        empresaRepository.save(empresa);
+        Empresa empresaGuardada = empresaRepository.save(empresa);
+        log.info("✅ Empresa guardada en MySQL con ID: {}", empresaGuardada.getId());
 
+        // 2. 🔥 REGISTRAR EN FIREBASE
+        try {
+            firebaseTrackingService.upsertEmpresa(empresaGuardada);
+            log.info("✅ Empresa {} registrada en Firebase exitosamente", empresaGuardada.getId());
+        } catch (Exception e) {
+            log.error("❌ Error al registrar empresa en Firebase (continuando): {}", e.getMessage());
+            // No detener el flujo si Firebase falla
+        }
+
+        // 3. Crear usuario
         Usuario usuario = Usuario.builder()
                 .username(request.getEmail())
                 .correo(request.getEmail())
@@ -69,8 +87,12 @@ public class AuthService {
                 .build();
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        log.info("✅ Usuario creado con ID: {}", usuarioGuardado.getId());
+
         String token = jwtService.getToken(usuarioGuardado, usuarioGuardado);
         UserResponse userResponse = createUserResponseWithBusInfo(usuarioGuardado);
+
+        log.info("✅ Registro de empresa completado exitosamente");
 
         return AuthResponse.success(token, userResponse);
     }
@@ -84,6 +106,8 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         try {
+            log.info("🔵 Intento de login para: {}", request.getEmail());
+
             Usuario usuario = usuarioRepository.findByCorreo(request.getEmail())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
@@ -99,9 +123,12 @@ public class AuthService {
             String token = jwtService.getToken(usuario, usuario);
             UserResponse userResponse = createUserResponseWithBusInfo(usuario);
 
+            log.info("✅ Login exitoso para: {}", request.getEmail());
+
             return AuthResponse.success(token, userResponse);
 
         } catch (AuthenticationException e) {
+            log.error("❌ Login fallido para: {}", request.getEmail());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
     }
@@ -128,7 +155,7 @@ public class AuthService {
                             .busNumber(bus.getPlaca());
                 }
             } catch (Exception e) {
-                // Continúa sin datos del bus en caso de error
+                log.warn("⚠️ No se pudo obtener información del bus para chofer: {}", usuario.getId());
             }
         }
 
