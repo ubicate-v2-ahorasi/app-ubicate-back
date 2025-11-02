@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "buses", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"placa"})
+        @UniqueConstraint(columnNames = {"placa", "empresa_id"})
 })
 @Getter
 @Setter
@@ -23,8 +23,11 @@ public class Bus implements EmpresaAware {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 10)
+    @Column(nullable = false, length = 10)
     private String placa;
+
+    @Column(nullable = false, length = 50)
+    private String marca;
 
     @Column(nullable = false, length = 50)
     private String modelo;
@@ -32,15 +35,15 @@ public class Bus implements EmpresaAware {
     @Column(nullable = false)
     private Integer capacidad;
 
-    @Column(length = 4)
-    private String anio;
+    @Column(nullable = false)
+    private Integer anio;
 
     @Column(length = 50)
     private String color;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private EstadoBus estado = EstadoBus.INACTIVO;
+    private EstadoBus estado = EstadoBus.ACTIVO;
 
     @Builder.Default
     private Boolean activo = true;

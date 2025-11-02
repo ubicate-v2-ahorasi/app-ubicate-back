@@ -1,5 +1,6 @@
 package app_jwt.auth_service.domain.dtos.bus;
 
+import app_jwt.auth_service.domain.enums.EstadoBus;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -11,6 +12,10 @@ public class CreateBusRequest {
     @Pattern(regexp = "^[A-Z0-9-]+$", message = "La placa solo puede contener letras mayúsculas, números y guiones")
     private String placa;
 
+    @NotBlank(message = "La marca es obligatoria")
+    @Size(max = 50, message = "La marca no puede exceder 50 caracteres")
+    private String marca;
+
     @NotBlank(message = "El modelo es obligatorio")
     @Size(max = 50, message = "El modelo no puede exceder 50 caracteres")
     private String modelo;
@@ -20,12 +25,15 @@ public class CreateBusRequest {
     @Max(value = 100, message = "La capacidad no puede exceder 100 pasajeros")
     private Integer capacidad;
 
-    @Pattern(regexp = "^(19|20)\\d{2}$", message = "El año debe estar entre 1900 y 2099")
-    private String anio;
+    @NotNull(message = "El año es obligatorio")
+    @Min(value = 1990, message = "El año debe ser mayor a 1990")
+    @Max(value = 2030, message = "El año no puede ser mayor a 2030")
+    private Integer anio;
 
     @Size(max = 50, message = "El color no puede exceder 50 caracteres")
     private String color;
 
-    // 🚌 RUTA ASIGNADA (OPCIONAL AL CREAR)
+    private EstadoBus estado;
+
     private Long rutaId;
 }

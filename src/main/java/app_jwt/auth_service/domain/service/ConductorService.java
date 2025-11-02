@@ -4,7 +4,7 @@ import app_jwt.auth_service.domain.dtos.conductor.*;
 import app_jwt.auth_service.domain.entity.*;
 import app_jwt.auth_service.domain.enums.EstadoConductor;
 import app_jwt.auth_service.domain.enums.Role;
-import app_jwt.auth_service.domain.enums.TurnoConductor;
+// ❌ REMOVIDO: import app_jwt.auth_service.domain.enums.TurnoConductor;
 import app_jwt.auth_service.infra.repository.BusRepository;
 import app_jwt.auth_service.infra.repository.ConductorRepository;
 import app_jwt.auth_service.infra.repository.EmpresaRepository;
@@ -100,7 +100,7 @@ public class ConductorService {
                 .numeroLicencia(request.getNumeroLicencia().toUpperCase(Locale.ROOT).trim())
                 .categoriaLicencia(request.getCategoriaLicencia())
                 .fechaVencimientoLicencia(request.getFechaVencimientoLicencia())
-                .turno(request.getTurno())
+                // ❌ REMOVIDO: .turno(request.getTurno())
                 .estado(EstadoConductor.ACTIVO)
                 .busAsignado(busAsignado)
                 .empresaId(empresaId)
@@ -175,9 +175,7 @@ public class ConductorService {
         if (request.getFechaVencimientoLicencia() != null) {
             conductor.setFechaVencimientoLicencia(request.getFechaVencimientoLicencia());
         }
-        if (request.getTurno() != null) {
-            conductor.setTurno(request.getTurno());
-        }
+        // ❌ REMOVIDO: if (request.getTurno() != null) { conductor.setTurno(request.getTurno()); }
         if (request.getEstado() != null) {
             conductor.setEstado(request.getEstado());
         }
@@ -306,16 +304,7 @@ public class ConductorService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<ConductorResponse> getConductoresByTurno(Long empresaId, TurnoConductor turno) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-
-        List<Conductor> conductores = conductorRepository.findByEmpresaIdAndTurnoAndActivoTrue(empresaId, turno);
-        return conductores.stream()
-                .map(conductor -> ConductorResponse.fromWithEmpresa(conductor, empresa.getNombre()))
-                .collect(Collectors.toList());
-    }
+    // ❌ MÉTODO COMPLETO REMOVIDO: getConductoresByTurno()
 
     @Transactional(readOnly = true)
     public ConductorStatsResponse getStats(Long empresaId) {
@@ -378,5 +367,4 @@ public class ConductorService {
         Route ruta = bus != null ? bus.getRutaAsignada() : null;
         return DriverAssignmentResponse.of(c.getId(), bus, ruta);
     }
-
 }

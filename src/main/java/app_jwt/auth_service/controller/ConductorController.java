@@ -3,7 +3,6 @@ package app_jwt.auth_service.controller;
 import app_jwt.auth_service.domain.dtos.bus.ApiResponse;
 import app_jwt.auth_service.domain.dtos.conductor.*;
 import app_jwt.auth_service.domain.enums.EstadoConductor;
-import app_jwt.auth_service.domain.enums.TurnoConductor;
 import app_jwt.auth_service.domain.service.ConductorService;
 import app_jwt.auth_service.infra.security.AuthUtils;
 import jakarta.validation.Valid;
@@ -149,18 +148,6 @@ public class ConductorController {
         Long empresaId = authUtils.getEmpresaId(authentication);
 
         List<ConductorResponse> conductores = conductorService.getConductoresByEstado(empresaId, estado);
-        return ResponseEntity.ok(conductores);
-    }
-
-    @GetMapping("/turno/{turno}")
-    public ResponseEntity<List<ConductorResponse>> getConductoresByTurno(
-            @PathVariable TurnoConductor turno,
-            Authentication authentication) {
-
-        authUtils.validateIsEmpresa(authentication);
-        Long empresaId = authUtils.getEmpresaId(authentication);
-
-        List<ConductorResponse> conductores = conductorService.getConductoresByTurno(empresaId, turno);
         return ResponseEntity.ok(conductores);
     }
 

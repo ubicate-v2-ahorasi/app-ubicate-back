@@ -1,7 +1,6 @@
 package app_jwt.auth_service.domain.dtos.conductor;
 
 import app_jwt.auth_service.domain.enums.CategoriaLicencia;
-import app_jwt.auth_service.domain.enums.TurnoConductor;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -44,10 +43,6 @@ public class CreateConductorRequest {
     @Future(message = "La fecha debe ser futura")
     @JsonProperty("fechaVencimientoLicencia")
     private LocalDate fechaVencimientoLicencia;
-
-    @NotNull(message = "El turno es obligatorio")
-    @JsonProperty("turno")
-    private TurnoConductor turno;
 
     @JsonProperty("busAsignadoId")
     private Long busAsignadoId;

@@ -12,9 +12,10 @@ import java.time.LocalDateTime;
 public class BusResponse {
     private Long id;
     private String placa;
+    private String marca;
     private String modelo;
     private Integer capacidad;
-    private String anio;
+    private Integer anio;
     private String color;
     private EstadoBus estado;
     private Boolean activo;
@@ -22,13 +23,11 @@ public class BusResponse {
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
 
-    // 📍 UBICACIÓN EN TIEMPO REAL
     private Double latitud;
     private Double longitud;
     private Double velocidad;
     private LocalDateTime ultimaUbicacion;
 
-    // 🚌 INFORMACIÓN DE RUTA
     private RutaInfo ruta;
 
     @Data
@@ -58,6 +57,7 @@ public class BusResponse {
         return BusResponse.builder()
                 .id(bus.getId())
                 .placa(bus.getPlaca())
+                .marca(bus.getMarca())
                 .modelo(bus.getModelo())
                 .capacidad(bus.getCapacidad())
                 .anio(bus.getAnio())

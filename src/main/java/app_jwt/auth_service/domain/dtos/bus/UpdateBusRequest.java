@@ -7,6 +7,9 @@ import lombok.Data;
 @Data
 public class UpdateBusRequest {
 
+    @Size(max = 50, message = "La marca no puede exceder 50 caracteres")
+    private String marca;
+
     @Size(max = 50, message = "El modelo no puede exceder 50 caracteres")
     private String modelo;
 
@@ -14,8 +17,9 @@ public class UpdateBusRequest {
     @Max(value = 100, message = "La capacidad no puede exceder 100 pasajeros")
     private Integer capacidad;
 
-    @Pattern(regexp = "^(19|20)\\d{2}$", message = "El año debe estar entre 1900 y 2099")
-    private String anio;
+    @Min(value = 1990, message = "El año debe ser mayor a 1990")
+    @Max(value = 2030, message = "El año no puede ser mayor a 2030")
+    private Integer anio;
 
     @Size(max = 50, message = "El color no puede exceder 50 caracteres")
     private String color;

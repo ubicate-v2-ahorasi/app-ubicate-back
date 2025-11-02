@@ -51,13 +51,14 @@ public class BusService {
 
         Bus bus = Bus.builder()
                 .placa(request.getPlaca().toUpperCase())
+                .marca(request.getMarca())
                 .modelo(request.getModelo())
                 .capacidad(request.getCapacidad())
                 .anio(request.getAnio())
                 .color(request.getColor())
                 .empresaId(empresaId)
                 .rutaAsignada(rutaAsignada)
-                .estado(EstadoBus.INACTIVO)
+                .estado(request.getEstado() != null ? request.getEstado() : EstadoBus.ACTIVO)
                 .activo(true)
                 .build();
 
@@ -84,6 +85,7 @@ public class BusService {
         return busRepository.findByRutaAsignadaAndActivoTrue(ruta, pageable)
                 .map(BusResponse::from);
     }
+
     @Transactional(readOnly = true)
     public List<BusResponse> getBusesByRuta(Long rutaId, Long empresaId) {
         Route ruta = routeRepository.findById(rutaId)
@@ -101,6 +103,7 @@ public class BusService {
                 .map(BusResponse::from)
                 .collect(Collectors.toList());
     }
+
     @Transactional(readOnly = true)
     public List<BusResponse> getBusesByEstado(Long empresaId, EstadoBus estado) {
         return busRepository.findByEmpresaIdAndEstadoAndActivoTrueWithRoute(empresaId, estado)
@@ -132,6 +135,7 @@ public class BusService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede modificar un bus inactivo");
         }
 
+        if (request.getMarca() != null) bus.setMarca(request.getMarca());
         if (request.getModelo() != null) bus.setModelo(request.getModelo());
         if (request.getCapacidad() != null) bus.setCapacidad(request.getCapacidad());
         if (request.getAnio() != null) bus.setAnio(request.getAnio());
@@ -257,7 +261,6 @@ public class BusService {
                 .build();
     }
 
-    // Métodos para Firebase
     @Transactional(readOnly = true)
     public Bus getBusEntity(Long busId, Long empresaId) {
         Bus bus = busRepository.findById(busId)
