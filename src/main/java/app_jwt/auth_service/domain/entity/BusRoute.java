@@ -1,4 +1,4 @@
-package app_jwt.auth_service.model;
+package app_jwt.auth_service.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -20,13 +20,13 @@ public class BusRoute {
     private String routeName;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String polyline; // Polyline encoded de Google Maps
+    private String polyline;
 
     @Column(nullable = false)
-    private String routeId; // ID único de la ruta
+    private String routeId;
 
     @Column
-    private Double averageSpeed; // Velocidad promedio en km/h
+    private Double averageSpeed;
 
     @Column
     private Boolean isActive = true;
