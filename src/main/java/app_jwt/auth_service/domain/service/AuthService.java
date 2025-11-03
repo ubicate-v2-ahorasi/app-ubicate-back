@@ -29,7 +29,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j // 🆕 AGREGAR para logging
+@Slf4j
 public class AuthService {
 
     private final UsuarioRepository usuarioRepository;
