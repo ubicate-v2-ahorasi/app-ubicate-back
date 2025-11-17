@@ -31,6 +31,7 @@ public class BusService {
     private final RouteRepository routeRepository;
     private final SecurityUtils securityUtils;
     private final FirebaseTrackingService firebaseTrackingService;
+    private final QRCodeService qrCodeService;
 
     @Transactional
     public BusResponse createBus(CreateBusRequest request, Long empresaId) {
