@@ -51,6 +51,8 @@ public class ConductorService {
         }
 
         String email = request.getEmail().toLowerCase(Locale.ROOT).trim();
+        String telefono = request.getTelefono().toLowerCase(Locale.ROOT).trim();
+        String dni = request.getDni().toLowerCase(Locale.ROOT).trim();
 
         if (usuarioRepository.findByCorreo(email).isPresent()) {
             throw new RuntimeException("El email ya está registrado");
@@ -58,6 +60,13 @@ public class ConductorService {
         if (conductorRepository.existsByNumeroLicenciaAndActivoTrue(request.getNumeroLicencia())) {
             throw new RuntimeException("Ya existe un conductor con ese número de licencia");
         }
+        if (usuarioRepository.findByTelefono(telefono).isPresent()){
+            throw new RuntimeException("Ya existe un conductor con ese número de telefono");
+        }
+        if (usuarioRepository.findByDni(dni).isPresent()){
+            throw new RuntimeException("Ya existe un conductor con ese DNI");
+        }
+
 
         String username = generateUsername(email);
         String tempPasswordRaw = generatePasswordFromDniOrRandom(request.getDni());

@@ -47,7 +47,6 @@ public class AuthService {
         validateRegisterRequest(request);
 
         Long nuevaEmpresaId = generateUniqueEmpresaId();
-        log.info("✅ ID generado para nueva empresa: {}", nuevaEmpresaId);
 
         // 1. Crear empresa en MySQL
         Empresa empresa = Empresa.builder()

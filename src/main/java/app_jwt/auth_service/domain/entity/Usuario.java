@@ -38,11 +38,11 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, length = 100)
     private String apellido;
 
-    @Column(length = 8)
+    @Column(unique = true, length = 8)
     @Pattern(regexp = "\\d{8}")
     private String dni;
 
-    @Column(nullable = false, length = 15)
+    @Column(unique = true, length = 9)
     private String telefono;
 
     @Column(unique = true, nullable = false, length = 100)
