@@ -22,6 +22,21 @@ public interface BusRepository extends JpaRepository<Bus, Long> {
     @Query("SELECT b FROM Bus b LEFT JOIN FETCH b.rutaAsignada WHERE b.empresaId = :empresaId AND b.activo = true")
     Page<Bus> findByEmpresaIdAndActivoTrueWithRoute(@Param("empresaId") Long empresaId, Pageable pageable);
 
+    @Query("SELECT b FROM Bus b LEFT JOIN FETCH b.rutaAsignada WHERE b.empresaId = :empresaId " +
+            "AND (:search IS NULL OR :search = '' OR " +
+            "LOWER(b.placa) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(b.modelo) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(b.marca) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "CAST(b.id AS string) LIKE CONCAT('%', :search, '%')) " +
+            "AND (:estado IS NULL OR b.estado = :estado) " +
+            "AND b.activo = true")
+    Page<Bus> searchBusesByEmpresa(
+            @Param("empresaId") Long empresaId,
+            @Param("search") String search,
+            @Param("estado") EstadoBus estado,
+            Pageable pageable
+    );
+
     @Query("SELECT b FROM Bus b LEFT JOIN FETCH b.rutaAsignada WHERE b.id = :busId")
     Optional<Bus> findByIdWithRoute(@Param("busId") Long busId);
 

@@ -2,6 +2,7 @@ package app_jwt.auth_service.domain.service;
 
 import app_jwt.auth_service.domain.dtos.conductor.*;
 import app_jwt.auth_service.domain.entity.*;
+import app_jwt.auth_service.domain.enums.CategoriaLicencia;
 import app_jwt.auth_service.domain.enums.EstadoConductor;
 import app_jwt.auth_service.domain.enums.Role;
 // ❌ REMOVIDO: import app_jwt.auth_service.domain.enums.TurnoConductor;
@@ -129,21 +130,17 @@ public class ConductorService {
     }
 
     @Transactional(readOnly = true)
-    public Page<ConductorResponse> getConductores(Long empresaId, Pageable pageable) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-
-        Page<Conductor> conductores = conductorRepository.findByEmpresaIdAndActivoTrue(empresaId, pageable);
-        return conductores.map(conductor -> ConductorResponse.fromWithEmpresa(conductor, empresa.getNombre()));
+    public Page<ConductorResponse> getConductores(Long empresaId, String searchTerm, EstadoConductor estado, CategoriaLicencia categoria, Pageable pageable) {
+        // Pasar todos los parámetros al repositorio
+        return conductorRepository.searchConductores(empresaId, searchTerm, estado, categoria, pageable)
+                .map(conductor -> ConductorResponse.from(conductor));
     }
+
 
     @Transactional(readOnly = true)
     public Page<ConductorResponse> searchConductores(Long empresaId, String searchTerm, Pageable pageable) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new RuntimeException("Empresa no encontrada"));
-
-        Page<Conductor> conductores = conductorRepository.searchConductores(empresaId, searchTerm, pageable);
-        return conductores.map(conductor -> ConductorResponse.fromWithEmpresa(conductor, empresa.getNombre()));
+        Page<Conductor> conductores = conductorRepository.searchConductores(empresaId, searchTerm, null, null, pageable);
+        return conductores.map(conductor -> ConductorResponse.from(conductor));
     }
 
     @Transactional(readOnly = true)

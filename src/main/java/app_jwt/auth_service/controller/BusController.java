@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
@@ -46,15 +47,38 @@ public class BusController {
     public ResponseEntity<Page<BusResponse>> getBuses(
             Authentication authentication,
             @RequestParam(required = false) Long rutaId,
-            @PageableDefault(size = 20) Pageable pageable) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) EstadoBus estado,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id,desc") String sort) {
+
         Long empresaId = authUtils.getEmpresaId(authentication);
 
+        int zeroBasedPage = Math.max(0, page - 1);
+
+        String[] sortParams = sort.split(",");
+        String sortField = sortParams[0];
+        String sortDirection = sortParams.length > 1 ? sortParams[1] : "asc";
+
+        Pageable pageable = PageRequest.of(
+                zeroBasedPage,
+                size,
+                sortDirection.equalsIgnoreCase("desc")
+                        ? org.springframework.data.domain.Sort.by(sortField).descending()
+                        : org.springframework.data.domain.Sort.by(sortField).ascending()
+        );
+
+        Page<BusResponse> buses;
+
         if (rutaId != null) {
-            Page<BusResponse> buses = busService.getBusesByRuta(rutaId, empresaId, pageable);
-            return ResponseEntity.ok(buses);
+            buses = busService.getBusesByRuta(rutaId, empresaId, pageable);
+        } else if (search != null || estado != null) {
+            buses = busService.searchBuses(empresaId, search, estado, pageable);
+        } else {
+            buses = busService.getBusesByEmpresa(empresaId, pageable);
         }
 
-        Page<BusResponse> buses = busService.getBusesByEmpresa(empresaId, pageable);
         return ResponseEntity.ok(buses);
     }
 

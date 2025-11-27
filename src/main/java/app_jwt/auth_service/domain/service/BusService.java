@@ -84,7 +84,11 @@ public class BusService {
         return busRepository.findByEmpresaIdAndActivoTrueWithRoute(empresaId, pageable)
                 .map(BusResponse::from);
     }
-
+    @Transactional(readOnly = true)
+    public Page<BusResponse> searchBuses(Long empresaId, String search, EstadoBus estado, Pageable pageable) {
+        return busRepository.searchBusesByEmpresa(empresaId, search, estado, pageable)
+                .map(BusResponse::from);
+    }
     @Transactional(readOnly = true)
     public Page<BusResponse> getBusesByRuta(Long rutaId, Long empresaId, Pageable pageable) {
         Route ruta = routeRepository.findById(rutaId)

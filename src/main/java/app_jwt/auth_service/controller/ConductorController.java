@@ -2,12 +2,14 @@ package app_jwt.auth_service.controller;
 
 import app_jwt.auth_service.domain.dtos.bus.ApiResponse;
 import app_jwt.auth_service.domain.dtos.conductor.*;
+import app_jwt.auth_service.domain.enums.CategoriaLicencia;
 import app_jwt.auth_service.domain.enums.EstadoConductor;
 import app_jwt.auth_service.domain.service.ConductorService;
 import app_jwt.auth_service.infra.security.AuthUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -42,14 +44,30 @@ public class ConductorController {
     @GetMapping
     public ResponseEntity<Page<ConductorResponse>> getConductores(
             Authentication authentication,
-            @PageableDefault(size = 20) Pageable pageable) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) EstadoConductor estado,
+            @RequestParam(required = false) CategoriaLicencia categoria,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
 
-        authUtils.validateIsEmpresa(authentication);
         Long empresaId = authUtils.getEmpresaId(authentication);
 
-        Page<ConductorResponse> conductores = conductorService.getConductores(empresaId, pageable);
+        // Convertir de 1-indexed a 0-indexed para la paginación
+        PageRequest pageable = PageRequest.of(page - 1, size);
+
+        // Pasar los parámetros al servicio
+        Page<ConductorResponse> conductores = conductorService.getConductores(
+                empresaId,
+                search,
+                estado != null ? estado : null, // Pasar el valor de estado
+                categoria != null ? categoria : null, // Pasar el valor de categoría
+                pageable
+        );
+
         return ResponseEntity.ok(conductores);
     }
+
+
 
     @GetMapping("/search")
     public ResponseEntity<Page<ConductorResponse>> searchConductores(
