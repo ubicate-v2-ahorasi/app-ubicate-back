@@ -7,6 +7,13 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123456789}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -50,14 +57,7 @@ jwt:
   secret: ${JWT_SECRET:586E3272357538782F413F4428472B4B6250655368566B597033733676397924423F4528482B4D6251655468576D5A7134743777217A25432A462D4A614E645267556B58703273357638792F423F4528472B4B6250655368566D597133733676397924}
   expiration: ${JWT_EXPIRATION:36000000}
 
-# 🔥 CONFIGURACIÓN FIREBASE CORRECTA (LA ORIGINAL)
-firebase:
-  credentials:
-    path: ${FIREBASE_CREDENTIALS_PATH:src/main/resources/firebase-service-account.json}
-    base64: ${FIREBASE_CREDENTIALS_BASE64:}
-  database:
-    url: ${FIREBASE_DATABASE_URL:https://flutter-firebase-e2cf0-default-rtdb.firebaseio.com}
-
+# 🔥 CONFIGURACIÓN REALTIME
 mfa:
   issuer: ${MFA_ISSUER:AuthApp-JWT}
 
@@ -103,12 +103,6 @@ spring:
       hibernate:
         format_sql: true
 
-firebase:
-  credentials:
-    path: src/main/resources/firebase-service-account.json
-  database:
-    url: https://flutter-firebase-e2cf0-default-rtdb.firebaseio.com
-
 logging:
   level:
     app_jwt.auth_service: DEBUG
@@ -140,13 +134,6 @@ spring:
       hibernate:
         format_sql: false
         use_sql_comments: false
-
-firebase:
-  credentials:
-    path: ""
-    base64: ${FIREBASE_CREDENTIALS_BASE64}
-  database:
-    url: ${FIREBASE_DATABASE_URL}
 
 server:
   error:
@@ -193,13 +180,6 @@ spring:
   h2:
     console:
       enabled: true
-
-firebase:
-  credentials:
-    path: ""
-    base64: ""
-  database:
-    url: ""
 
 logging:
   level:

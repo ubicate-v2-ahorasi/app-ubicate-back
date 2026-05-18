@@ -10,6 +10,8 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - DB_USERNAME=jcvjorge
       - DB_PASSWORD=password123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - JWT_SECRET=586E3272357538782F413F4428472B4B6250655368566B597033733676397924423F4528482B4D6251655468576D5A7134743777217A25432A462D4A614E645267556B58703273357638792F423F4528472B4B6250655368566D597133733676397924
       - FIREBASE_CREDENTIALS_PATH=/app/resources/firebase-service-account.json
       - FIREBASE_DATABASE_URL=https://ubicate-4271d-default-rtdb.firebaseio.com
@@ -43,6 +45,15 @@ services:
       timeout: 20s
       retries: 10
       interval: 10s
+
+  # Redis para comunicación en tiempo real
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - transport-network
+    restart: unless-stopped
 
   # phpMyAdmin para administrar la BD
   phpmyadmin:

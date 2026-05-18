@@ -1,6 +1,6 @@
 package app_jwt.auth_service.config;
 
-import app_jwt.auth_service.infra.repository.UsuarioRepository;
+import app_jwt.auth_service.shared.infrastructure.persistence.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

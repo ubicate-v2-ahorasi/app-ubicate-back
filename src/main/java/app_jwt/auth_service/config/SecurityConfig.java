@@ -1,8 +1,8 @@
 package app_jwt.auth_service.config;
 
-import app_jwt.auth_service.infra.security.JwtAccessDeniedHandler;
-import app_jwt.auth_service.infra.security.JwtAuthenticationEntryPoint;
-import app_jwt.auth_service.infra.security.JwtAuthenticationFilter;
+import app_jwt.auth_service.shared.infrastructure.security.JwtAccessDeniedHandler;
+import app_jwt.auth_service.shared.infrastructure.security.JwtAuthenticationEntryPoint;
+import app_jwt.auth_service.shared.infrastructure.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,7 +42,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/public/**").permitAll()  // Agregar endpoints públicos
+                        .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/ws-tracking/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
@@ -56,13 +57,12 @@ public class SecurityConfig {
         var c = new CorsConfiguration();
         c.setAllowedOrigins(List.of(
                 "http://localhost:4200",
-                "http://10.0.2.2:8080",
-                "*"
+                "http://10.0.2.2:8080"
         ));
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         c.setExposedHeaders(List.of("Authorization"));
-        c.setAllowCredentials(false);
+        c.setAllowCredentials(true);
 
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", c);
