@@ -13,9 +13,10 @@ COPY --from=build /app/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
 
 RUN mkdir -p /app/resources
 
-EXPOSE $PORT
+EXPOSE ${PORT:-8080}
 
-ENV SPRING_PROFILES_ACTIVE=prod
+ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-docker}
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
+ENV PORT=${PORT:-8080}
 
 CMD ["sh", "-c", "java $JAVA_OPTS -Dserver.port=$PORT -jar app.jar"]

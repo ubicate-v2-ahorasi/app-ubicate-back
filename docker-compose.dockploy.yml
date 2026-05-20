@@ -1,11 +1,13 @@
 # ==============================================
-# DOCKER COMPOSE PARA DOCKPLOY
+# DOCKER COMPOSE para DOCKPLOY
+# Incluye: Spring Boot + RabbitMQ
+# MySQL y Redis son servicios managed externos
 # ==============================================
-# Este archivo es para despliegue en Dockploy
-# Los servicios managed (MySQL, Redis, RabbitMQ) 
-# se configuran desde el panel de Dockploy
 
 services:
+  # ==========================================
+  # SPRING BOOT API
+  # ==========================================
   georoute-api:
     build:
       context: .
@@ -14,8 +16,6 @@ services:
     container_name: georoute-api
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
-    env_file:
-      - .env
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
       - DB_HOST=${DB_HOST}
@@ -25,24 +25,56 @@ services:
       - DB_NAME=${DB_NAME}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
-      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=${RABBITMQ_PORT}
       - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
-      - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH}
       - FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL}
       - CORS_ORIGINS=${CORS_ORIGINS}
       - JAVA_OPTS=${JAVA_OPTS}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - georoute-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8080}/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
+
+  # ==========================================
+  # RABBITMQ (mismo compose, misma red)
+  # ==========================================
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: georoute-rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - georoute-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
 
 networks:
   georoute-network:
     driver: bridge
+
+volumes:
+  rabbitmq_data:
+    driver: local
