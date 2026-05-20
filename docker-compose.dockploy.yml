@@ -1,0 +1,48 @@
+# ==============================================
+# DOCKER COMPOSE PARA DOCKPLOY
+# ==============================================
+# Este archivo es para despliegue en Dockploy
+# Los servicios managed (MySQL, Redis, RabbitMQ) 
+# se configuran desde el panel de Dockploy
+
+services:
+  georoute-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: georoute-api:latest
+    container_name: georoute-api
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH}
+      - FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - JAVA_OPTS=${JAVA_OPTS}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8080}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - georoute-network
+
+networks:
+  georoute-network:
+    driver: bridge

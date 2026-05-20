@@ -3,7 +3,7 @@ spring:
     name: auth-service
 
   datasource:
-    url: jdbc:mysql://db:3306/auth-jwt?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${DB_HOST:db}:${DB_PORT:3306}/${DB_NAME:georoute_db}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -17,11 +17,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
+        format_sql: false
         use_sql_comments: false
         generate_statistics: false
         jdbc:
@@ -35,9 +35,21 @@ spring:
     property-naming-strategy: SNAKE_CASE
     default-property-inclusion: NON_NULL
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      timeout: 60000
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
 server:
   address: 0.0.0.0
-  port: 8080
+  port: ${PORT:8080}
   error:
     include-stacktrace: never
     include-message: always
@@ -69,9 +81,9 @@ cors:
 logging:
   level:
     root: INFO
-    app_jwt.auth_service: DEBUG
+    app_jwt.auth_service: INFO
     org.springframework.security: WARN
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
     org.springframework.web: WARN
     com.zaxxer.hikari: INFO

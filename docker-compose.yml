@@ -1,50 +1,61 @@
 services:
-  # Tu aplicación Spring Boot
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "${PORT:-8080}:${PORT:-8080}"
+    env_file:
+      - .env
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - DB_USERNAME=jcvjorge
-      - DB_PASSWORD=password123
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USERNAME=guest
-      - RABBITMQ_PASSWORD=guest
-      - JWT_SECRET=586E3272357538782F413F4428472B4B6250655368566B597033733676397924423F4528482B4D6251655468576D5A7134743777217A25432A462D4A614E645267556B58703273357638792F423F4528472B4B6250655368566D597133733676397924
-      - FIREBASE_CREDENTIALS_PATH=/app/resources/firebase-service-account.json
-      - FIREBASE_DATABASE_URL=https://ubicate-4271d-default-rtdb.firebaseio.com
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:8082
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH}
+      - FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - JAVA_OPTS=${JAVA_OPTS}
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
       rabbitmq:
         condition: service_healthy
     volumes:
       - ./src/main/resources:/app/resources:ro
     networks:
-      - transport-network
+      - georoute-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8080}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Base de datos MySQL
   db:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: auth-jwt
-      MYSQL_USER: jcvjorge
-      MYSQL_PASSWORD: password123
+      MYSQL_ROOT_PASSWORD: RootPass2024!
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3308:3306"  # ✅ Cambio a puerto 3308
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - transport-network
+      - georoute-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -52,26 +63,24 @@ services:
       retries: 10
       interval: 10s
 
-  # Redis para comunicación en tiempo real
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
     networks:
-      - transport-network
+      - georoute-network
     restart: unless-stopped
 
-  # RabbitMQ para mensajes asíncronos e historial GPS
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     networks:
-      - transport-network
+      - georoute-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
@@ -79,9 +88,9 @@ services:
       retries: 3
 
 volumes:
-    mysql_data:
-      driver: local
+  mysql_data:
+    driver: local
 
 networks:
-    transport-network:
-      driver: bridge
+  georoute-network:
+    driver: bridge
