@@ -1,6 +1,7 @@
 package app_jwt.auth_service.shared.infrastructure.adapter.input.rest;
 
 import app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto.BusLocationResponse;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.BusPositionDTO;
 import app_jwt.auth_service.shared.infrastructure.adapter.input.rest.dto.EmpresaPublicResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteResponse;
 import app_jwt.auth_service.shared.application.service.PublicService;
@@ -46,6 +47,11 @@ public class PublicController {
     @GetMapping("/rutas/{rutaId}")
     public ResponseEntity<RouteResponse> getRutaById(@PathVariable Long rutaId) {
         return ResponseEntity.ok(publicService.getRutaById(rutaId));
+    }
+
+    @GetMapping("/rutas/{rutaId}/buses-posicion")
+    public ResponseEntity<List<BusPositionDTO>> getBusesPosicionByRuta(@PathVariable Long rutaId) {
+        return ResponseEntity.ok(publicService.getBusesPosicionByRuta(rutaId));
     }
 
     @GetMapping("/buses/{busId}")

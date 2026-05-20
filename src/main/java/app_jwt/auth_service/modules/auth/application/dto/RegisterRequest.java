@@ -1,4 +1,4 @@
-package app_jwt.auth_service.modules.auth.infrastructure.adapter.input.rest.dto;
+package app_jwt.auth_service.modules.auth.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;

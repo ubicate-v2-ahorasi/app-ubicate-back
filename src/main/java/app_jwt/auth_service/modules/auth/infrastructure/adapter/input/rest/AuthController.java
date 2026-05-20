@@ -1,9 +1,9 @@
 package app_jwt.auth_service.modules.auth.infrastructure.adapter.input.rest;
 
-import app_jwt.auth_service.modules.auth.infrastructure.adapter.input.rest.dto.AuthResponse;
-import app_jwt.auth_service.modules.auth.infrastructure.adapter.input.rest.dto.LoginRequest;
-import app_jwt.auth_service.modules.auth.infrastructure.adapter.input.rest.dto.RegisterRequest;
-import app_jwt.auth_service.modules.auth.application.service.AuthServiceImpl;
+import app_jwt.auth_service.modules.auth.application.dto.AuthResponse;
+import app_jwt.auth_service.modules.auth.application.dto.LoginRequest;
+import app_jwt.auth_service.modules.auth.application.dto.RegisterRequest;
+import app_jwt.auth_service.modules.auth.application.port.input.AuthUseCase;
 import app_jwt.auth_service.shared.enums.Role;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class AuthController {
 
-    private final AuthServiceImpl authService;
+    private final AuthUseCase authService;
 
     @PostMapping("/register/empresa")
     public ResponseEntity<AuthResponse> registerEmpresa(@Valid @RequestBody RegisterRequest request) {

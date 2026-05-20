@@ -1,6 +1,7 @@
 package app_jwt.auth_service.modules.route.domain.port.input;
 
 import app_jwt.auth_service.modules.route.domain.model.EstadoRuta;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.BusPositionDTO;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.CreateRouteRequest;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.UpdateRouteRequest;
@@ -14,4 +15,5 @@ public interface RouteService {
     RouteResponse getById(Long routeId, Long empresaId);
     RouteResponse update(Long routeId, UpdateRouteRequest request, Long empresaId);
     void delete(Long routeId, Long empresaId);
+    List<BusPositionDTO> getBusesPosicion(Long routeId, Long empresaId);
 }

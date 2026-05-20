@@ -1,5 +1,6 @@
 package app_jwt.auth_service.modules.bus.application.service;
 
+import app_jwt.auth_service.config.RabbitMQConfig;
 import app_jwt.auth_service.modules.bus.domain.model.Bus;
 import app_jwt.auth_service.modules.bus.domain.model.EstadoBus;
 import app_jwt.auth_service.modules.bus.domain.port.input.BusTrackingService;
@@ -19,6 +20,7 @@ import com.google.maps.model.LatLng;
 import com.google.maps.model.TravelMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ public class BusTrackingServiceImpl implements BusTrackingService {
     private final BusRepository busRepository;
     private final SecurityUtils securityUtils;
     private final RedisRealtimeService redisRealtimeService;
+    private final RabbitTemplate rabbitTemplate;
 
     @Value("${google.maps.api.key:}")
     private String googleMapsApiKey;
@@ -189,7 +192,18 @@ public class BusTrackingServiceImpl implements BusTrackingService {
         
         // Broadcast via Redis & WebSocket
         redisRealtimeService.publishBusLocation(bus.getEmpresaId(), bus.getId(), event);
-        
+
+        if (bus.getRutaAsignada() != null) {
+            redisRealtimeService.upsertBusToRutaIndex(bus);
+        }
+
+        // Publish to RabbitMQ for async history persistence
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_GPS,
+                RabbitMQConfig.ROUTING_KEY_HISTORY,
+                event
+        );
+
         log.info("Ubicación actualizada y publicada para bus {}: ({}, {})", placa, latitud, longitud);
     }
 }

@@ -75,6 +75,9 @@ public class BusServiceImpl implements BusService {
 
         try {
             redisRealtimeService.upsertBus(savedBus);
+            if (rutaAsignada != null) {
+                redisRealtimeService.upsertBusToRutaIndex(savedBus);
+            }
             log.info("Bus {} registrado en Redis Realtime exitosamente", savedBus.getId());
         } catch (Exception e) {
             log.error("Error al registrar bus en Redis Realtime: {}", e.getMessage());
@@ -229,6 +232,9 @@ public class BusServiceImpl implements BusService {
 
         try {
             redisRealtimeService.upsertBus(updatedBus);
+            if (ruta != null) {
+                redisRealtimeService.upsertBusToRutaIndex(updatedBus);
+            }
             log.info("Bus {} con ruta {} actualizado en Redis Realtime exitosamente", updatedBus.getId(), rutaId);
         } catch (Exception e) {
             log.error("Error al actualizar ruta del bus en Redis Realtime: {}", e.getMessage());
@@ -251,11 +257,15 @@ public class BusServiceImpl implements BusService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tiene permisos para modificar este bus");
         }
 
+        Long rutaAnteriorId = bus.getRutaAsignada() != null ? bus.getRutaAsignada().getId() : null;
         bus.setRutaAsignada(null);
         Bus updatedBus = busRepository.save(bus);
         log.info("Ruta removida en MySQL del bus: {}", updatedBus.getId());
 
         try {
+            if (rutaAnteriorId != null) {
+                redisRealtimeService.removeBusFromRutaIndex(rutaAnteriorId, busId);
+            }
             redisRealtimeService.upsertBus(updatedBus);
             log.info("Ruta removida del bus {} en Redis Realtime exitosamente", updatedBus.getId());
         } catch (Exception e) {
@@ -275,11 +285,15 @@ public class BusServiceImpl implements BusService {
 
         securityUtils.validateEmpresaAccess(bus.getEmpresaId(), empresaId, "bus");
 
+        Long rutaAnteriorId = bus.getRutaAsignada() != null ? bus.getRutaAsignada().getId() : null;
         bus.setActivo(false);
         Bus deletedBus = busRepository.save(bus);
         log.info("Bus eliminado en MySQL: {}", deletedBus.getId());
 
         try {
+            if (rutaAnteriorId != null) {
+                redisRealtimeService.removeBusFromRutaIndex(rutaAnteriorId, busId);
+            }
             redisRealtimeService.removeBus(empresaId, busId);
             log.info("Bus {} desactivado/eliminado de Redis Realtime exitosamente", busId);
         } catch (Exception e) {
@@ -394,6 +408,9 @@ public class BusServiceImpl implements BusService {
 
         try {
             redisRealtimeService.upsertBus(updatedBus);
+            if (updatedBus.getRutaAsignada() != null) {
+                redisRealtimeService.upsertBusToRutaIndex(updatedBus);
+            }
             log.debug("Ubicación del bus {} actualizada en Redis Realtime", busId);
         } catch (Exception e) {
             log.error("Error al actualizar ubicación del bus en Redis Realtime: {}", e.getMessage());

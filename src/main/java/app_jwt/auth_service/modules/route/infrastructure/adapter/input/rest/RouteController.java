@@ -2,6 +2,7 @@ package app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest;
 
 import app_jwt.auth_service.modules.route.domain.model.EstadoRuta;
 import app_jwt.auth_service.modules.route.domain.port.input.RouteService;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.BusPositionDTO;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.CreateRouteRequest;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.UpdateRouteRequest;
@@ -70,5 +71,13 @@ public class RouteController {
         Long empresaId = authUtils.getEmpresaId(authentication);
         routeService.delete(routeId, empresaId);
         return ResponseEntity.ok(new ApiResponse("Ruta eliminada exitosamente", true));
+    }
+
+    @GetMapping("/{routeId}/buses-posicion")
+    public ResponseEntity<List<BusPositionDTO>> getBusesPosicion(
+            @PathVariable Long routeId,
+            Authentication authentication) {
+        Long empresaId = authUtils.getEmpresaId(authentication);
+        return ResponseEntity.ok(routeService.getBusesPosicion(routeId, empresaId));
     }
 }

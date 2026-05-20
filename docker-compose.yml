@@ -12,12 +12,18 @@ services:
       - DB_PASSWORD=password123
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
       - JWT_SECRET=586E3272357538782F413F4428472B4B6250655368566B597033733676397924423F4528482B4D6251655468576D5A7134743777217A25432A462D4A614E645267556B58703273357638792F423F4528472B4B6250655368566D597133733676397924
       - FIREBASE_CREDENTIALS_PATH=/app/resources/firebase-service-account.json
       - FIREBASE_DATABASE_URL=https://ubicate-4271d-default-rtdb.firebaseio.com
       - CORS_ORIGINS=http://localhost:3000,http://localhost:8080,http://localhost:8082
     depends_on:
       db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     volumes:
       - ./src/main/resources:/app/resources:ro
@@ -55,39 +61,27 @@ services:
       - transport-network
     restart: unless-stopped
 
-  # phpMyAdmin para administrar la BD
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
+  # RabbitMQ para mensajes asíncronos e historial GPS
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_USER: jcvjorge
-      PMA_PASSWORD: password123
-      MYSQL_ROOT_PASSWORD: root123
-      PMA_ARBITRARY: 1
-    ports:
-      - "8082:80"
-    depends_on:
-      - db
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
     networks:
       - transport-network
     restart: unless-stopped
-
-  # Adminer como alternativa ligera
-  adminer:
-    image: adminer:latest
-    ports:
-      - "8081:8080"
-    depends_on:
-      - db
-    networks:
-      - transport-network
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      timeout: 30s
+      retries: 3
 
 volumes:
-  mysql_data:
-    driver: local
+    mysql_data:
+      driver: local
 
 networks:
-  transport-network:
-    driver: bridge
+    transport-network:
+      driver: bridge
