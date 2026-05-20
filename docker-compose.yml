@@ -1,12 +1,21 @@
+# ==============================================
+# DOCKER COMPOSE para DOCKPLOY
+# Incluye: Spring Boot + RabbitMQ
+# MySQL y Redis son servicios managed externos
+# ==============================================
+
 services:
-  app:
+  # ==========================================
+  # SPRING BOOT API
+  # ==========================================
+  georoute-api:
     build:
       context: .
       dockerfile: Dockerfile
+    image: georoute-api:latest
+    container_name: georoute-api
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
-    env_file:
-      - .env
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
       - DB_HOST=${DB_HOST}
@@ -16,24 +25,17 @@ services:
       - DB_NAME=${DB_NAME}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
-      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=${RABBITMQ_PORT}
       - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
-      - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH}
       - FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL}
       - CORS_ORIGINS=${CORS_ORIGINS}
       - JAVA_OPTS=${JAVA_OPTS}
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
       rabbitmq:
         condition: service_healthy
-    volumes:
-      - ./src/main/resources:/app/resources:ro
     networks:
       - georoute-network
     restart: unless-stopped
@@ -42,55 +44,37 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
 
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: RootPass2024!
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - georoute-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-      interval: 10s
-
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-    networks:
-      - georoute-network
-    restart: unless-stopped
-
+  # ==========================================
+  # RABBITMQ (mismo compose, misma red)
+  # ==========================================
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:3.13-management-alpine
+    container_name: georoute-rabbitmq
+    hostname: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - georoute-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
       timeout: 30s
-      retries: 3
-
-volumes:
-  mysql_data:
-    driver: local
+      retries: 5
+      start_period: 30s
 
 networks:
   georoute-network:
     driver: bridge
+
+volumes:
+  rabbitmq_data:
+    driver: local
