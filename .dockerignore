@@ -3,7 +3,10 @@ target/*
 !target/*.jar
 
 # Resto de exclusiones
+# Keep maven wrapper files for builds
 .mvn/wrapper/
+!.mvn/wrapper/maven-wrapper.properties
+!.mvn/wrapper/maven-wrapper.jar
 .idea/
 *.iml
 .vscode/
