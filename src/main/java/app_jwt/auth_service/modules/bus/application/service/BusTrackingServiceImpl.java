@@ -178,17 +178,17 @@ public class BusTrackingServiceImpl implements BusTrackingService {
         busRepository.save(bus);
         
         // Prepare event
-        BusLocationEvent event = BusLocationEvent.builder()
-                .busId(bus.getId())
-                .placa(bus.getPlaca())
-                .latitud(latitud)
-                .longitud(longitud)
-                .velocidad(bus.getVelocidad())
-                .estado(bus.getEstado().name())
-                .timestamp(bus.getUltimaUbicacion())
-                .empresaId(bus.getEmpresaId())
-                .rutaId(bus.getRutaAsignada() != null ? bus.getRutaAsignada().getId() : null)
-                .build();
+        BusLocationEvent event = BusLocationEvent.create(
+                bus.getId(),
+                bus.getPlaca(),
+                latitud,
+                longitud,
+                bus.getVelocidad(),
+                bus.getEstado().name(),
+                bus.getUltimaUbicacion(),
+                bus.getEmpresaId(),
+                bus.getRutaAsignada() != null ? bus.getRutaAsignada().getId() : null
+        );
         
         // Broadcast via Redis & WebSocket
         redisRealtimeService.publishBusLocation(bus.getEmpresaId(), bus.getId(), event);

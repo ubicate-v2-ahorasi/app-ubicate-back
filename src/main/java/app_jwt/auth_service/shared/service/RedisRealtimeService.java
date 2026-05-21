@@ -51,18 +51,18 @@ public class RedisRealtimeService {
      */
     public void upsertBus(Bus bus) {
         String redisKey = String.format(BUS_KEY_PREFIX + ":data", bus.getEmpresaId(), bus.getId());
-        
-        BusLocationEvent event = BusLocationEvent.builder()
-                .busId(bus.getId())
-                .placa(bus.getPlaca())
-                .latitud(bus.getLatitud())
-                .longitud(bus.getLongitud())
-                .velocidad(bus.getVelocidad())
-                .estado(bus.getEstado().name())
-                .timestamp(bus.getUltimaUbicacion())
-                .empresaId(bus.getEmpresaId())
-                .rutaId(bus.getRutaAsignada() != null ? bus.getRutaAsignada().getId() : null)
-                .build();
+
+        BusLocationEvent event = BusLocationEvent.create(
+                bus.getId(),
+                bus.getPlaca(),
+                bus.getLatitud(),
+                bus.getLongitud(),
+                bus.getVelocidad(),
+                bus.getEstado().name(),
+                bus.getUltimaUbicacion(),
+                bus.getEmpresaId(),
+                bus.getRutaAsignada() != null ? bus.getRutaAsignada().getId() : null
+        );
 
         redisTemplate.opsForValue().set(redisKey, event);
         
