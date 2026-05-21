@@ -20,12 +20,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Punto de entrada para la conexión WebSocket
         registry.addEndpoint("/ws-tracking")
-                .setAllowedOrigins("http://localhost:4200", "http://localhost:8100") // Ajustar según tus frontends
-                .withSockJS(); // Soporte para navegadores antiguos
-                
+                .setAllowedOrigins("http://localhost:4200", "http://localhost:8100", "https://ubicate.codlyp.website")
+                .withSockJS();
+
         registry.addEndpoint("/ws-tracking")
-                .setAllowedOrigins("http://localhost:4200", "http://localhost:8100");
+                .setAllowedOrigins("http://localhost:4200", "http://localhost:8100", "https://ubicate.codlyp.website");
     }
 }
