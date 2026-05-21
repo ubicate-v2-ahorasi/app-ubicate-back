@@ -46,8 +46,8 @@ public class BusLocationHistory {
     @Column(name = "ruta_id")
     private Long rutaId;
 
-    @Column(name = "timestamp", nullable = false)
-    private LocalDateTime timestamp;
+    @Column(name = "timestamp", nullable = false, length = 30)
+    private String timestamp;
 
     @Column(name = "fecha_registro")
     @Builder.Default
