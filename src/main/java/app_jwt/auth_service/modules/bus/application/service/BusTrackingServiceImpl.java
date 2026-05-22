@@ -215,6 +215,8 @@ public class BusTrackingServiceImpl implements BusTrackingService {
 
         securityUtils.validateEmpresaAccess(bus.getEmpresaId(), empresaId, "bus");
 
+        EstadoSenal estadoAnterior = bus.getEstadoSenal();
+
         if (activo) {
             bus.setEstadoSenal(EstadoSenal.EN_LINEA);
             bus.setEstado(EstadoBus.EN_RUTA);
@@ -225,6 +227,39 @@ public class BusTrackingServiceImpl implements BusTrackingService {
 
         busRepository.save(bus);
 
+        if (estadoAnterior != bus.getEstadoSenal()) {
+            publicarEventoSenal(bus, estadoAnterior);
+        }
+
         log.info("Estado del bus {} actualizado a activo={}, estadoSenal={}", placa, activo, bus.getEstadoSenal());
+    }
+
+    private void publicarEventoSenal(Bus bus, EstadoSenal estadoAnterior) {
+        try {
+            String mensaje = bus.getEstadoSenal() == EstadoSenal.SIN_SEÑAL
+                    ? "El bus " + bus.getPlaca() + " ha perdido señal GPS."
+                    : "El bus " + bus.getPlaca() + " ha recuperado señal GPS y está en línea.";
+
+            SenalNotificacionEvent event = SenalNotificacionEvent.builder()
+                    .busId(bus.getId())
+                    .placa(bus.getPlaca())
+                    .empresaId(bus.getEmpresaId())
+                    .tipo(bus.getEstadoSenal())
+                    .mensaje(mensaje)
+                    .latitud(bus.getLatitud())
+                    .longitud(bus.getLongitud())
+                    .conductorId(bus.getConductorAsignado() != null ? bus.getConductorAsignado().getId() : null)
+                    .build();
+
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE_NOTIFICATIONS,
+                    "notification.senal",
+                    event
+            );
+
+            log.debug("Evento de señal publicado inmediatamente para bus {}", bus.getPlaca());
+        } catch (Exception e) {
+            log.error("Error al publicar evento de señal para bus {}: {}", bus.getPlaca(), e.getMessage());
+        }
     }
 }
