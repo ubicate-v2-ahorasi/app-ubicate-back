@@ -31,46 +31,25 @@ public class BusSignalMonitor {
         LocalDateTime threshold = LocalDateTime.now().minusSeconds(SEGUNDOS_SIN_SEÑAL);
 
         List<Bus> busesActivos = busRepository.findByActivoTrue();
-        int countSinSenal = 0;
-        int countEnLinea = 0;
 
         for (Bus bus : busesActivos) {
             if (bus.getUltimaUbicacion() == null) {
                 continue;
             }
 
-            boolean necesitaActualizar = false;
-            EstadoSenal estadoAnterior = bus.getEstadoSenal();
-
-            if (bus.getUltimaUbicacion().isBefore(threshold)) {
-                if (bus.getEstadoSenal() != EstadoSenal.SIN_SEÑAL) {
-                    bus.setEstadoSenal(EstadoSenal.SIN_SEÑAL);
-                    necesitaActualizar = true;
-                    countSinSenal++;
-                    log.warn("Bus {} marcado como SIN_SEÑAL (última ubicación: {})",
-                            bus.getPlaca(), bus.getUltimaUbicacion());
-                }
-            } else {
-                if (bus.getEstadoSenal() != EstadoSenal.EN_LINEA) {
-                    bus.setEstadoSenal(EstadoSenal.EN_LINEA);
-                    necesitaActualizar = true;
-                    countEnLinea++;
-                    log.info("Bus {} volvió a EN_LINEA", bus.getPlaca());
-                }
-            }
-
-            if (necesitaActualizar) {
+            if (bus.getUltimaUbicacion().isBefore(threshold) && bus.getEstadoSenal() != EstadoSenal.SIN_SEÑAL) {
+                bus.setEstadoSenal(EstadoSenal.SIN_SEÑAL);
                 busRepository.save(bus);
-                publicarEventoSenal(bus, estadoAnterior);
+                publicarEventoSenal(bus);
+                log.warn("Bus {} marcado como SIN_SEÑAL (última ubicación: {})",
+                        bus.getPlaca(), bus.getUltimaUbicacion());
             }
         }
 
-        if (countSinSenal > 0 || countEnLinea > 0) {
-            log.info("Resumen: {} buses SIN_SEÑAL, {} buses recuperaron EN_LINEA", countSinSenal, countEnLinea);
-        }
+        log.debug("Verificación de señales completada");
     }
 
-    private void publicarEventoSenal(Bus bus, EstadoSenal estadoAnterior) {
+    private void publicarEventoSenal(Bus bus) {
         try {
             String mensaje = construirMensaje(bus, estadoAnterior);
 
