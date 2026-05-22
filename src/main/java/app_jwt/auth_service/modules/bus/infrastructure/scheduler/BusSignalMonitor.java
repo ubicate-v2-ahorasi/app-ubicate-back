@@ -51,16 +51,18 @@ public class BusSignalMonitor {
 
     private void publicarEventoSenal(Bus bus) {
         try {
-            String mensaje = construirMensaje(bus, estadoAnterior);
+            String mensaje = "El bus " + bus.getPlaca() + " ha perdido señal GPS. " +
+                    "Última ubicación hace " + SEGUNDOS_SIN_SEÑAL + " segundo(s).";
 
             SenalNotificacionEvent event = SenalNotificacionEvent.builder()
                     .busId(bus.getId())
                     .placa(bus.getPlaca())
                     .empresaId(bus.getEmpresaId())
-                    .tipo(bus.getEstadoSenal())
+                    .tipo(EstadoSenal.SIN_SEÑAL)
                     .mensaje(mensaje)
                     .latitud(bus.getLatitud())
                     .longitud(bus.getLongitud())
+                    .conductorId(bus.getConductorAsignado() != null ? bus.getConductorAsignado().getId() : null)
                     .timestamp(LocalDateTime.now())
                     .ultimaUbicacion(bus.getUltimaUbicacion())
                     .build();
@@ -71,18 +73,9 @@ public class BusSignalMonitor {
                     event
             );
 
-            log.debug("Evento publicado a RabbitMQ para bus {} - {}", bus.getPlaca(), bus.getEstadoSenal());
+            log.debug("Evento publicado a RabbitMQ para bus {} - SIN_SEÑAL", bus.getPlaca());
         } catch (Exception e) {
             log.error("Error al publicar evento de señal para bus {}: {}", bus.getPlaca(), e.getMessage());
-        }
-    }
-
-    private String construirMensaje(Bus bus, EstadoSenal estadoAnterior) {
-        if (bus.getEstadoSenal() == EstadoSenal.SIN_SEÑAL) {
-            return "El bus " + bus.getPlaca() + " ha perdido señal GPS. " +
-                    "Última ubicación hace " + SEGUNDOS_SIN_SEÑAL + " segundo(s).";
-        } else {
-            return "El bus " + bus.getPlaca() + " ha recuperado señal GPS y está en línea nuevamente.";
         }
     }
 }
