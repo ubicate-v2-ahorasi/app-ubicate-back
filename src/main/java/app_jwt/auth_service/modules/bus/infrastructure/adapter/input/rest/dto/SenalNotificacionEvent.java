@@ -24,6 +24,7 @@ public class SenalNotificacionEvent implements Serializable {
     private String mensaje;
     private Double latitud;
     private Double longitud;
+    private Long conductorId;
     private LocalDateTime timestamp;
     private LocalDateTime ultimaUbicacion;
 }
