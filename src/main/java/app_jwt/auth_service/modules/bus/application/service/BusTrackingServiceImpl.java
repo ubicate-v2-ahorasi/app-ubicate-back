@@ -175,10 +175,6 @@ public class BusTrackingServiceImpl implements BusTrackingService {
         bus.setLongitud(longitud);
         bus.setUltimaUbicacion(LocalDateTime.now());
 
-        if (bus.getEstado() == EstadoBus.INACTIVO) {
-            bus.setEstado(EstadoBus.EN_RUTA);
-        }
-
         busRepository.save(bus);
         
         // Prepare event
