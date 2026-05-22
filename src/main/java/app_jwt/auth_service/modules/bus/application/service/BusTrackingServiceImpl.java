@@ -3,12 +3,15 @@ package app_jwt.auth_service.modules.bus.application.service;
 import app_jwt.auth_service.config.RabbitMQConfig;
 import app_jwt.auth_service.modules.bus.domain.model.Bus;
 import app_jwt.auth_service.modules.bus.domain.model.EstadoBus;
+import app_jwt.auth_service.modules.bus.domain.model.EstadoSenal;
 import app_jwt.auth_service.modules.bus.domain.port.input.BusTrackingService;
 import app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto.BusLocationEvent;
+import app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto.SenalNotificacionEvent;
 import app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto.WaitTimeRequest;
 import app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto.WaitTimeResponse;
 import app_jwt.auth_service.modules.bus.infrastructure.adapter.output.persistence.BusRepository;
 import app_jwt.auth_service.modules.route.domain.model.Route;
+import app_jwt.auth_service.shared.service.PushNotificationService;
 import app_jwt.auth_service.shared.service.RedisRealtimeService;
 import app_jwt.auth_service.shared.utils.SecurityUtils;
 import com.google.maps.DirectionsApi;
@@ -38,6 +41,7 @@ public class BusTrackingServiceImpl implements BusTrackingService {
     private final SecurityUtils securityUtils;
     private final RedisRealtimeService redisRealtimeService;
     private final RabbitTemplate rabbitTemplate;
+    private final PushNotificationService pushNotificationService;
 
     @Value("${google.maps.api.key:}")
     private String googleMapsApiKey;
@@ -161,7 +165,7 @@ public class BusTrackingServiceImpl implements BusTrackingService {
 
     @Override
     @Transactional
-    public void actualizarUbicacionBus(String placa, Double latitud, Double longitud, Long empresaId) {
+    public void actualizarUbicacionBus(String placa, Double latitud, Double longitud, Boolean activo, Long empresaId) {
         Bus bus = busRepository.findByPlacaAndActivoTrue(placa)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bus no encontrado"));
 
@@ -205,5 +209,53 @@ public class BusTrackingServiceImpl implements BusTrackingService {
         );
 
         log.info("Ubicación actualizada y publicada para bus {}: ({}, {})", placa, latitud, longitud);
+    }
+
+    @Override
+    @Transactional
+    public void actualizarEstadoBus(String placa, Boolean activo, Long empresaId) {
+        Bus bus = busRepository.findByPlacaAndActivoTrue(placa)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bus no encontrado"));
+
+        securityUtils.validateEmpresaAccess(bus.getEmpresaId(), empresaId, "bus");
+
+        EstadoSenal estadoAnterior = bus.getEstadoSenal();
+
+        if (activo) {
+            bus.setEstadoSenal(EstadoSenal.EN_LINEA);
+            bus.setEstado(EstadoBus.EN_RUTA);
+        } else {
+            bus.setEstadoSenal(EstadoSenal.SIN_SEÑAL);
+            bus.setEstado(EstadoBus.INACTIVO);
+        }
+
+        busRepository.save(bus);
+
+        // Publish signal notification if state changed
+        if (estadoAnterior != bus.getEstadoSenal()) {
+            SenalNotificacionEvent event = SenalNotificacionEvent.builder()
+                    .busId(bus.getId())
+                    .placa(bus.getPlaca())
+                    .tipo(bus.getEstadoSenal())
+                    .mensaje(activo ? "Bus Activado" : "Bus Desactivado")
+                    .latitud(bus.getLatitud())
+                    .longitud(bus.getLongitud())
+                    .conductorId(bus.getConductorAsignado() != null ? bus.getConductorAsignado().getId() : null)
+                    .build();
+
+            pushNotificationService.broadcastSenalAlertToEmpresa(bus.getEmpresaId(), event);
+
+            if (bus.getConductorAsignado() != null) {
+                pushNotificationService.sendSignalAlertToConductor(
+                        bus.getConductorAsignado().getId(),
+                        bus.getId(),
+                        bus.getPlaca(),
+                        bus.getEstadoSenal(),
+                        activo ? "Tu bus está en línea" : "Tu bus fue desactivado"
+                );
+            }
+        }
+
+        log.info("Estado del bus {} actualizado a activo={}, estadoSenal={}", placa, activo, bus.getEstadoSenal());
     }
 }

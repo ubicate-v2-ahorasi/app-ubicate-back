@@ -36,14 +36,30 @@ public class BusTrackingController {
             @PathVariable String placa,
             @RequestParam Double latitud,
             @RequestParam Double longitud,
+            @RequestParam(defaultValue = "true") Boolean activo,
             Authentication authentication) {
 
         Long empresaId = authUtils.getEmpresaId(authentication);
-        busTrackingService.actualizarUbicacionBus(placa, latitud, longitud, empresaId);
+        busTrackingService.actualizarUbicacionBus(placa, latitud, longitud, activo, empresaId);
 
         return ResponseEntity.ok(ApiResponse.builder()
                 .success(true)
                 .message("Ubicación del bus actualizada correctamente")
+                .build());
+    }
+
+    @PutMapping("/bus/{placa}/estado")
+    public ResponseEntity<ApiResponse> actualizarEstadoBus(
+            @PathVariable String placa,
+            @RequestParam Boolean activo,
+            Authentication authentication) {
+
+        Long empresaId = authUtils.getEmpresaId(authentication);
+        busTrackingService.actualizarEstadoBus(placa, activo, empresaId);
+
+        return ResponseEntity.ok(ApiResponse.builder()
+                .success(true)
+                .message(activo ? "Bus activado" : "Bus desactivado")
                 .build());
     }
 }
