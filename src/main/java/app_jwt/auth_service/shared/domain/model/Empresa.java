@@ -31,6 +31,9 @@ public class Empresa {
     @Column(length = 200)
     private String direccion;
 
+    @Column(length = 100)
+    private String email;
+
     @Builder.Default
     private Boolean activo = true;
 
