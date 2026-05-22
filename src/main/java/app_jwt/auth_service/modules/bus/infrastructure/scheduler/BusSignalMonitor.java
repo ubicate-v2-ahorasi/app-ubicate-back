@@ -88,7 +88,7 @@ public class BusSignalMonitor {
 
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.EXCHANGE_NOTIFICATIONS,
-                    "senial.alerta",
+                    "notification.senal",
                     event
             );
 

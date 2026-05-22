@@ -58,6 +58,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Binding senalNotificationsBinding(Queue notificationsQueue, TopicExchange notificationsExchange) {
+        return BindingBuilder.bind(notificationsQueue)
+                .to(notificationsExchange)
+                .with("senial.alerta");
+    }
+
+    @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
