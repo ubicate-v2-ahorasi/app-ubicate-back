@@ -171,6 +171,11 @@ public class BusTrackingServiceImpl implements BusTrackingService {
 
         securityUtils.validateEmpresaAccess(bus.getEmpresaId(), empresaId, "bus");
 
+        if (!activo) {
+            log.debug("Ignorando ubicación para bus {} - transmision detenida", placa);
+            return;
+        }
+
         bus.setLatitud(latitud);
         bus.setLongitud(longitud);
         bus.setUltimaUbicacion(LocalDateTime.now());
