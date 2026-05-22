@@ -23,12 +23,12 @@ public class BusSignalMonitor {
     private final BusRepository busRepository;
     private final RabbitTemplate rabbitTemplate;
 
-    private static final int MINUTOS_SIN_SEÑAL = 1;
+    private static final int SEGUNDOS_SIN_SEÑAL = 10;
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 10000)
     @Transactional
     public void verificarSeñales() {
-        LocalDateTime threshold = LocalDateTime.now().minusMinutes(MINUTOS_SIN_SEÑAL);
+        LocalDateTime threshold = LocalDateTime.now().minusSeconds(SEGUNDOS_SIN_SEÑAL);
 
         List<Bus> busesActivos = busRepository.findByActivoTrue();
         int countSinSenal = 0;
@@ -101,7 +101,7 @@ public class BusSignalMonitor {
     private String construirMensaje(Bus bus, EstadoSenal estadoAnterior) {
         if (bus.getEstadoSenal() == EstadoSenal.SIN_SEÑAL) {
             return "El bus " + bus.getPlaca() + " ha perdido señal GPS. " +
-                    "Última ubicación hace " + MINUTOS_SIN_SEÑAL + " minuto(s).";
+                    "Última ubicación hace " + SEGUNDOS_SIN_SEÑAL + " segundo(s).";
         } else {
             return "El bus " + bus.getPlaca() + " ha recuperado señal GPS y está en línea nuevamente.";
         }
