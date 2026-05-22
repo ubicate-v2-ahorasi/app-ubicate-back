@@ -58,4 +58,8 @@ public interface BusRepository extends JpaRepository<Bus, Long> {
 
     @Query("SELECT b FROM Bus b JOIN FETCH b.rutaAsignada r WHERE b.placa = :placa AND b.activo = true")
     Optional<Bus> findByPlacaWithRoute(@Param("placa") String placa);
+
+    List<Bus> findByActivoTrue();
+
+    List<Bus> findByRutaAsignadaAndActivoTrue(Route ruta);
 }

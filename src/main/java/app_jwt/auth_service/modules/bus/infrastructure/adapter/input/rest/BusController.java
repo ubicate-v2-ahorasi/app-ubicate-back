@@ -144,4 +144,13 @@ public class BusController {
         BusStatsResponse stats = busService.getBusStats(empresaId);
         return ResponseEntity.ok(stats);
     }
+
+    @GetMapping("/ruta/{rutaId}/ubicaciones")
+    public ResponseEntity<List<BusUbicacionResponse>> getUbicacionesBusesPorRuta(
+            @PathVariable Long rutaId,
+            Authentication authentication) {
+        Long empresaId = authUtils.getEmpresaId(authentication);
+        List<BusUbicacionResponse> ubicaciones = busService.getUbicacionesBusesPorRuta(rutaId, empresaId);
+        return ResponseEntity.ok(ubicaciones);
+    }
 }

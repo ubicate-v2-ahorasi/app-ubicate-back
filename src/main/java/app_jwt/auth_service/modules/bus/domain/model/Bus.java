@@ -75,6 +75,10 @@ public class Bus implements EmpresaAware {
     @Column(name = "ultima_ubicacion")
     private LocalDateTime ultimaUbicacion;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private EstadoSenal estadoSenal = EstadoSenal.EN_LINEA;
+
     @OneToOne(mappedBy = "busAsignado", fetch = FetchType.LAZY)
     private Conductor conductorAsignado;
 

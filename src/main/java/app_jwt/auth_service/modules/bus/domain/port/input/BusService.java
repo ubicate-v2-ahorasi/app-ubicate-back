@@ -38,4 +38,6 @@ public interface BusService {
     Bus getBusEntity(Long busId, Long empresaId);
 
     void syncLocationSnapshot(Long busId, Double latitud, Double longitud, Double velocidad);
+
+    List<BusUbicacionResponse> getUbicacionesBusesPorRuta(Long rutaId, Long empresaId);
 }

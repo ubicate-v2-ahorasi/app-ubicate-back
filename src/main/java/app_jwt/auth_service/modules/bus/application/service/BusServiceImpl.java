@@ -418,4 +418,31 @@ public class BusServiceImpl implements BusService {
 
         log.debug("Snapshot de ubicación sincronizado para bus {}", busId);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BusUbicacionResponse> getUbicacionesBusesPorRuta(Long rutaId, Long empresaId) {
+        Route ruta = routeRepository.findById(rutaId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ruta no encontrada"));
+
+        securityUtils.validateEmpresaAccess(ruta.getEmpresaId(), empresaId, "ruta");
+
+        List<Bus> buses = busRepository.findByRutaAsignadaAndActivoTrue(ruta);
+
+        return buses.stream()
+                .filter(b -> b.getLatitud() != null && b.getLongitud() != null)
+                .map(bus -> BusUbicacionResponse.builder()
+                        .busId(bus.getId())
+                        .placa(bus.getPlaca())
+                        .latitud(bus.getLatitud())
+                        .longitud(bus.getLongitud())
+                        .velocidad(bus.getVelocidad())
+                        .estado(bus.getEstado() != null ? bus.getEstado().name() : null)
+                        .estadoSenal(bus.getEstadoSenal())
+                        .ultimaUbicacion(bus.getUltimaUbicacion())
+                        .rutaId(ruta.getId())
+                        .nombreRuta(ruta.getNombre())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
