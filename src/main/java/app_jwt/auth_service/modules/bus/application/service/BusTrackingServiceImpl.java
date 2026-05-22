@@ -225,6 +225,7 @@ public class BusTrackingServiceImpl implements BusTrackingService {
         if (activo) {
             bus.setEstadoSenal(EstadoSenal.EN_LINEA);
             bus.setEstado(EstadoBus.EN_RUTA);
+            bus.setUltimaUbicacion(LocalDateTime.now());
         } else {
             bus.setEstadoSenal(EstadoSenal.SIN_SEÑAL);
             bus.setEstado(EstadoBus.INACTIVO);
