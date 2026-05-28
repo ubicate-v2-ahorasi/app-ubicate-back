@@ -57,7 +57,8 @@ public class SecurityConfig {
         var c = new CorsConfiguration();
         c.setAllowedOrigins(List.of(
                 "http://localhost:4200",
-                "http://10.0.2.2:8080"
+                "http://10.0.2.2:8080",
+                "https://geo.ubicate.page"
         ));
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
