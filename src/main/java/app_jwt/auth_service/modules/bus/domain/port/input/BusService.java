@@ -35,6 +35,8 @@ public interface BusService {
 
     BusStatsResponse getBusStats(Long empresaId);
 
+    List<BusLocationResponse> getBusesConUltimaUbicacion(Long empresaId);
+
     Bus getBusEntity(Long busId, Long empresaId);
 
     void syncLocationSnapshot(Long busId, Double latitud, Double longitud, Double velocidad);

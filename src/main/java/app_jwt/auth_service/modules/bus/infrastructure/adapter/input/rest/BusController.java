@@ -76,6 +76,13 @@ public class BusController {
         return ResponseEntity.ok(buses);
     }
 
+    @GetMapping("/con-ubicacion")
+    public ResponseEntity<List<BusLocationResponse>> getBusesConUltimaUbicacion(
+            Authentication authentication) {
+        Long empresaId = authUtils.getEmpresaId(authentication);
+        return ResponseEntity.ok(busService.getBusesConUltimaUbicacion(empresaId));
+    }
+
     @GetMapping("/{busId}")
     public ResponseEntity<BusResponse> getBusById(
             @PathVariable Long busId,

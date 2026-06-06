@@ -2,6 +2,7 @@ package app_jwt.auth_service.shared.service;
 
 import app_jwt.auth_service.modules.bus.domain.model.Bus;
 import app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto.BusLocationEvent;
+import app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto.BusLocationResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.BusPositionDTO;
 import app_jwt.auth_service.shared.domain.model.Empresa;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,9 +37,11 @@ public class RedisRealtimeService {
      */
     public void publishBusLocation(Long empresaId, Long busId, Object locationData) {
         String redisKey = String.format(BUS_KEY_PREFIX + ":location", empresaId, busId);
+        String dataKey = String.format(BUS_KEY_PREFIX + ":data", empresaId, busId);
         
-        // 1. Guardar última ubicación conocida en Redis (Cache)
+        // 1. Guardar una sola última ubicación conocida en Redis.
         redisTemplate.opsForValue().set(redisKey, locationData);
+        redisTemplate.opsForValue().set(dataKey, locationData);
         
         // 2. Enviar directamente al WebSocket (Topic STOMP)
         broadcastToWebSockets(empresaId, busId, locationData);
@@ -86,6 +89,50 @@ public class RedisRealtimeService {
         deleteEvent.put("deleted", true);
         
         broadcastToWebSockets(empresaId, busId, deleteEvent);
+    }
+
+    public List<BusLocationResponse> getLatestBusLocationsByEmpresa(Long empresaId) {
+        String pattern = String.format(BUS_KEY_PREFIX + ":data", empresaId, 0L)
+                .replace(":bus:0:", ":bus:*:");
+        Set<String> keys = redisTemplate.keys(pattern);
+
+        if (keys == null || keys.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return keys.stream()
+                .map(key -> redisTemplate.opsForValue().get(key))
+                .filter(Objects::nonNull)
+                .map(this::toBusLocationResponse)
+                .filter(Objects::nonNull)
+                .filter(location -> location.getLatitud() != null && location.getLongitud() != null)
+                .collect(Collectors.toList());
+    }
+
+    private BusLocationResponse toBusLocationResponse(Object value) {
+        try {
+            BusLocationEvent event = value instanceof String json
+                    ? objectMapper.readValue(json, BusLocationEvent.class)
+                    : objectMapper.convertValue(value, BusLocationEvent.class);
+
+            return BusLocationResponse.builder()
+                    .id(event.getBusId())
+                    .placa(event.getPlaca())
+                    .latitud(event.getLatitud())
+                    .longitud(event.getLongitud())
+                    .velocidad(event.getVelocidad())
+                    .estado(event.getEstado() != null
+                            ? app_jwt.auth_service.modules.bus.domain.model.EstadoBus.valueOf(event.getEstado())
+                            : null)
+                    .rutaId(event.getRutaId())
+                    .ultimaUbicacion(event.getTimestamp() != null
+                            ? LocalDateTime.parse(event.getTimestamp())
+                            : null)
+                    .build();
+        } catch (Exception e) {
+            log.warn("No se pudo convertir ubicación en Redis: {}", e.getMessage());
+            return null;
+        }
     }
 
     /**

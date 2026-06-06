@@ -171,13 +171,17 @@ public class BusTrackingServiceImpl implements BusTrackingService {
 
         securityUtils.validateEmpresaAccess(bus.getEmpresaId(), empresaId, "bus");
 
-        if (!activo) {
-            log.debug("Ignorando ubicación para bus {} - transmision detenida", placa);
-            return;
+        if (latitud != null && longitud != null) {
+            bus.setLatitud(latitud);
+            bus.setLongitud(longitud);
         }
-
-        bus.setLatitud(latitud);
-        bus.setLongitud(longitud);
+        if (Boolean.FALSE.equals(activo)) {
+            bus.setEstadoSenal(EstadoSenal.SIN_SEÑAL);
+            bus.setEstado(EstadoBus.INACTIVO);
+        } else {
+            bus.setEstadoSenal(EstadoSenal.EN_LINEA);
+            bus.setEstado(EstadoBus.EN_RUTA);
+        }
         bus.setUltimaUbicacion(LocalDateTime.now());
 
         busRepository.save(bus);
@@ -186,8 +190,8 @@ public class BusTrackingServiceImpl implements BusTrackingService {
         BusLocationEvent event = BusLocationEvent.create(
                 bus.getId(),
                 bus.getPlaca(),
-                latitud,
-                longitud,
+                bus.getLatitud(),
+                bus.getLongitud(),
                 bus.getVelocidad(),
                 bus.getEstado().name(),
                 bus.getUltimaUbicacion(),
@@ -209,7 +213,7 @@ public class BusTrackingServiceImpl implements BusTrackingService {
                 event
         );
 
-        log.info("Ubicación actualizada y publicada para bus {}: ({}, {})", placa, latitud, longitud);
+        log.info("Última ubicación publicada para bus {}: ({}, {}), activo={}", placa, bus.getLatitud(), bus.getLongitud(), activo);
     }
 
     @Override
@@ -232,6 +236,11 @@ public class BusTrackingServiceImpl implements BusTrackingService {
         }
 
         busRepository.save(bus);
+
+        redisRealtimeService.upsertBus(bus);
+        if (bus.getRutaAsignada() != null) {
+            redisRealtimeService.upsertBusToRutaIndex(bus);
+        }
 
         if (estadoAnterior != bus.getEstadoSenal()) {
             publicarEventoSenal(bus, estadoAnterior);
