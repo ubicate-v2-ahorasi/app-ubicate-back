@@ -332,26 +332,19 @@ public class BusServiceImpl implements BusService {
     @Override
     @Transactional(readOnly = true)
     public BusStatsResponse getBusStats(Long empresaId) {
-        List<Object[]> estadisticas = busRepository.findBusStatsByEmpresaId(empresaId);
-        Long totalBuses = busRepository.countByEmpresaIdAndActivoTrue(empresaId);
-        Long busesConRuta = busRepository.countByEmpresaIdAndActivoTrueAndRutaAsignadaIsNotNull(empresaId);
-        Long busesSinRuta = busRepository.countByEmpresaIdAndActivoTrueAndRutaAsignadaIsNull(empresaId);
-
         Map<String, Long> estadoPorCantidad = new HashMap<>();
-        Long activos = 0L, inactivos = 0L, enRuta = 0L, enMantenimiento = 0L;
+        Long totalBuses = safeCount(busRepository.countByEmpresaIdAndActivoTrue(empresaId));
+        Long busesConRuta = safeCount(busRepository.countByEmpresaIdAndActivoTrueAndRutaAsignadaIsNotNull(empresaId));
+        Long busesSinRuta = safeCount(busRepository.countByEmpresaIdAndActivoTrueAndRutaAsignadaIsNull(empresaId));
+        Long activos = countByEstado(empresaId, EstadoBus.ACTIVO);
+        Long inactivos = countByEstado(empresaId, EstadoBus.INACTIVO);
+        Long enRuta = countByEstado(empresaId, EstadoBus.EN_RUTA);
+        Long enMantenimiento = countByEstado(empresaId, EstadoBus.MANTENIMIENTO);
 
-        for (Object[] stat : estadisticas) {
-            EstadoBus estado = (EstadoBus) stat[0];
-            Long cantidad = (Long) stat[1];
-            estadoPorCantidad.put(estado.name(), cantidad);
-
-            switch (estado) {
-                case ACTIVO -> activos = cantidad;
-                case INACTIVO -> inactivos = cantidad;
-                case EN_RUTA -> enRuta = cantidad;
-                case MANTENIMIENTO -> enMantenimiento = cantidad;
-            }
-        }
+        estadoPorCantidad.put(EstadoBus.ACTIVO.name(), activos);
+        estadoPorCantidad.put(EstadoBus.INACTIVO.name(), inactivos);
+        estadoPorCantidad.put(EstadoBus.EN_RUTA.name(), enRuta);
+        estadoPorCantidad.put(EstadoBus.MANTENIMIENTO.name(), enMantenimiento);
 
         return BusStatsResponse.builder()
                 .totalBuses(totalBuses)
@@ -367,6 +360,29 @@ public class BusServiceImpl implements BusService {
                 .detenidos(0L)
                 .sinConexion(0L)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BusLocationResponse> getBusesConUltimaUbicacion(Long empresaId) {
+        List<BusLocationResponse> redisLocations = redisRealtimeService.getLatestBusLocationsByEmpresa(empresaId);
+        if (!redisLocations.isEmpty()) {
+            return redisLocations;
+        }
+
+        return busRepository
+                .findByEmpresaIdAndActivoTrueAndLatitudIsNotNullAndLongitudIsNotNullWithRoute(empresaId)
+                .stream()
+                .map(BusLocationResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    private Long countByEstado(Long empresaId, EstadoBus estado) {
+        return safeCount(busRepository.countByEmpresaIdAndEstadoAndActivoTrue(empresaId, estado));
+    }
+
+    private Long safeCount(Long value) {
+        return value == null ? 0L : value;
     }
 
     @Override

@@ -47,6 +47,7 @@ public interface BusRepository extends JpaRepository<Bus, Long> {
 
     Long countByEmpresaIdAndActivoTrueAndRutaAsignadaIsNotNull(Long empresaId);
     Long countByEmpresaIdAndActivoTrueAndRutaAsignadaIsNull(Long empresaId);
+    Long countByEmpresaIdAndEstadoAndActivoTrue(Long empresaId, EstadoBus estado);
 
     @Query("SELECT b FROM Bus b LEFT JOIN FETCH b.rutaAsignada WHERE b.empresaId = :empresaId AND b.activo = true AND b.latitud IS NOT NULL AND b.longitud IS NOT NULL")
     List<Bus> findByEmpresaIdAndActivoTrueAndLatitudIsNotNullAndLongitudIsNotNullWithRoute(@Param("empresaId") Long empresaId);
