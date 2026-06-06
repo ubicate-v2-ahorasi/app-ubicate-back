@@ -30,21 +30,19 @@ public class DefaultDataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (usuarioRepository.findByCorreo(DEFAULT_EMAIL).isPresent()) {
+        var existingUser = usuarioRepository.findByCorreo(DEFAULT_EMAIL);
+        if (existingUser.isPresent()) {
+            Usuario usuario = existingUser.get();
+            if (usuario.getEmpresaId() == null) {
+                usuario.setEmpresaId(DEFAULT_EMPRESA_ID);
+                usuarioRepository.save(usuario);
+            }
+            ensureDefaultEmpresaExists(usuario.getEmpresaId());
             log.info("Usuario semilla ya existe: {}", DEFAULT_EMAIL);
             return;
         }
 
-        Empresa empresa = empresaRepository.findById(DEFAULT_EMPRESA_ID)
-                .orElseGet(() -> empresaRepository.save(Empresa.builder()
-                        .id(DEFAULT_EMPRESA_ID)
-                        .nombre("Empresa Demo")
-                        .ruc("00000000001")
-                        .telefono("900000000")
-                        .direccion("Trujillo")
-                        .email(DEFAULT_EMAIL)
-                        .activo(true)
-                        .build()));
+        Empresa empresa = ensureDefaultEmpresaExists(DEFAULT_EMPRESA_ID);
 
         Usuario usuario = Usuario.builder()
                 .empresaId(empresa.getId())
@@ -60,5 +58,21 @@ public class DefaultDataSeeder implements CommandLineRunner {
 
         usuarioRepository.save(usuario);
         log.info("Usuario semilla creado: {} / {}", DEFAULT_EMAIL, DEFAULT_PASSWORD);
+    }
+
+    private Empresa ensureDefaultEmpresaExists(Long empresaId) {
+        return empresaRepository.findById(empresaId)
+                .orElseGet(() -> {
+                    log.warn("Empresa semilla no existe para id {}. Creando empresa demo.", empresaId);
+                    return empresaRepository.save(Empresa.builder()
+                            .id(empresaId)
+                            .nombre("Empresa Demo")
+                            .ruc("00000000001")
+                            .telefono("900000000")
+                            .direccion("Trujillo")
+                            .email(DEFAULT_EMAIL)
+                            .activo(true)
+                            .build());
+                });
     }
 }
