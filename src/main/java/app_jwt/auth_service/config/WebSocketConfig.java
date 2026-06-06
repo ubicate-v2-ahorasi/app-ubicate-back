@@ -10,6 +10,14 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    private static final String[] ALLOWED_ORIGINS = {
+            "http://localhost:4200",
+            "http://localhost:8100",
+            "http://10.0.2.2:8080",
+            "https://geo.ubicate.page",
+            "https://ubicate.codlyp.website"
+    };
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Habilitar un broker simple para destinos prefijados con /topic
@@ -21,10 +29,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-tracking")
-                .setAllowedOrigins("http://localhost:4200", "http://localhost:8100", "https://ubicate.codlyp.website")
+                .setAllowedOrigins(ALLOWED_ORIGINS)
                 .withSockJS();
 
         registry.addEndpoint("/ws-tracking")
-                .setAllowedOrigins("http://localhost:4200", "http://localhost:8100", "https://ubicate.codlyp.website");
+                .setAllowedOrigins(ALLOWED_ORIGINS);
     }
 }
