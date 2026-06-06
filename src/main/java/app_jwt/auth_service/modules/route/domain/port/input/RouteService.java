@@ -4,6 +4,8 @@ import app_jwt.auth_service.modules.route.domain.model.EstadoRuta;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.BusPositionDTO;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.CreateRouteRequest;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteResponse;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopRequest;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.UpdateRouteRequest;
 
 import java.util.List;
@@ -16,4 +18,6 @@ public interface RouteService {
     RouteResponse update(Long routeId, UpdateRouteRequest request, Long empresaId);
     void delete(Long routeId, Long empresaId);
     List<BusPositionDTO> getBusesPosicion(Long routeId, Long empresaId);
+    List<RouteStopResponse> getStops(Long routeId, Long empresaId);
+    List<RouteStopResponse> replaceStops(Long routeId, List<RouteStopRequest> request, Long empresaId);
 }

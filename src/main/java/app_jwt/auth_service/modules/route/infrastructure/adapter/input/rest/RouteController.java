@@ -5,6 +5,8 @@ import app_jwt.auth_service.modules.route.domain.port.input.RouteService;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.BusPositionDTO;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.CreateRouteRequest;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteResponse;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopRequest;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.UpdateRouteRequest;
 import app_jwt.auth_service.shared.dto.ApiResponse;
 import app_jwt.auth_service.shared.utils.AuthUtils;
@@ -79,5 +81,22 @@ public class RouteController {
             Authentication authentication) {
         Long empresaId = authUtils.getEmpresaId(authentication);
         return ResponseEntity.ok(routeService.getBusesPosicion(routeId, empresaId));
+    }
+
+    @GetMapping("/{routeId}/paradas")
+    public ResponseEntity<List<RouteStopResponse>> getStops(
+            @PathVariable Long routeId,
+            Authentication authentication) {
+        Long empresaId = authUtils.getEmpresaId(authentication);
+        return ResponseEntity.ok(routeService.getStops(routeId, empresaId));
+    }
+
+    @PutMapping("/{routeId}/paradas")
+    public ResponseEntity<List<RouteStopResponse>> replaceStops(
+            @PathVariable Long routeId,
+            @Valid @RequestBody List<@Valid RouteStopRequest> request,
+            Authentication authentication) {
+        Long empresaId = authUtils.getEmpresaId(authentication);
+        return ResponseEntity.ok(routeService.replaceStops(routeId, request, empresaId));
     }
 }

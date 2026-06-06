@@ -29,6 +29,7 @@ public class RouteResponse {
 
     private List<BusBasicInfo> buses;
     private Integer totalBuses;
+    private Long totalParadas;
 
     @Data
     @Builder
@@ -40,6 +41,10 @@ public class RouteResponse {
     }
 
     public static RouteResponse from(Route route) {
+        return from(route, null);
+    }
+
+    public static RouteResponse from(Route route, Long totalParadas) {
         List<BusBasicInfo> busesInfo = route.getBuses() != null ?
                 route.getBuses().stream()
                         .filter(bus -> Boolean.TRUE.equals(bus.getActivo()))
@@ -67,6 +72,7 @@ public class RouteResponse {
                 .fechaActualizacion(route.getFechaActualizacion())
                 .buses(busesInfo)
                 .totalBuses(busesInfo.size())
+                .totalParadas(totalParadas)
                 .build();
     }
 }
