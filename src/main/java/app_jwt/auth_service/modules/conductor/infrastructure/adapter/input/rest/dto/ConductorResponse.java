@@ -12,6 +12,7 @@ import lombok.Data;
 public class ConductorResponse {
     private Long id;
     private String nombreCompleto;
+    private String email;
     private String dni;
     private String telefono;
     private String numeroLicencia;
@@ -28,6 +29,7 @@ public class ConductorResponse {
         return ConductorResponse.builder()
                 .id(conductor.getId())
                 .nombreCompleto(conductor.getUsuario().getNombre() + " " + conductor.getUsuario().getApellido())
+                .email(conductor.getUsuario().getCorreo())
                 .dni(conductor.getUsuario().getDni())
                 .telefono(conductor.getUsuario().getTelefono())
                 .numeroLicencia(conductor.getNumeroLicencia())
