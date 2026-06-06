@@ -83,7 +83,7 @@ public class BusController {
         return ResponseEntity.ok(busService.getBusesConUltimaUbicacion(empresaId));
     }
 
-    @GetMapping("/{busId}")
+    @GetMapping("/{busId:\\d+}")
     public ResponseEntity<BusResponse> getBusById(
             @PathVariable Long busId,
             Authentication authentication) {
@@ -92,7 +92,7 @@ public class BusController {
         return ResponseEntity.ok(bus);
     }
 
-    @PutMapping("/{busId}")
+    @PutMapping("/{busId:\\d+}")
     public ResponseEntity<BusResponse> updateBus(@PathVariable Long busId,
                                                  @Valid @RequestBody UpdateBusRequest request,
                                                  Authentication authentication) {
@@ -101,7 +101,7 @@ public class BusController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{busId}/asignar-ruta")
+    @PatchMapping("/{busId:\\d+}/asignar-ruta")
     public ResponseEntity<BusResponse> asignarRuta(@PathVariable Long busId,
                                                    @RequestParam Long rutaId,
                                                    Authentication authentication) {
@@ -110,7 +110,7 @@ public class BusController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{busId}/remover-ruta")
+    @PatchMapping("/{busId:\\d+}/remover-ruta")
     public ResponseEntity<BusResponse> removerRuta(@PathVariable Long busId,
                                                    Authentication authentication) {
         Long empresaId = authUtils.getEmpresaId(authentication);
@@ -118,7 +118,7 @@ public class BusController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{busId}")
+    @DeleteMapping("/{busId:\\d+}")
     public ResponseEntity<ApiResponse> deleteBus(
             @PathVariable Long busId,
             Authentication authentication) {
@@ -127,7 +127,7 @@ public class BusController {
         return ResponseEntity.ok(new ApiResponse("Bus eliminado exitosamente", true));
     }
 
-    @PatchMapping("/{busId}/estado")
+    @PatchMapping("/{busId:\\d+}/estado")
     public ResponseEntity<BusResponse> changeEstadoBus(@PathVariable Long busId,
                                                        @RequestParam EstadoBus estado,
                                                        Authentication authentication) {
