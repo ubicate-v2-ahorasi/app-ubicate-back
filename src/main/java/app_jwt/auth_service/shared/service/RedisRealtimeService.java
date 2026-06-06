@@ -101,12 +101,21 @@ public class RedisRealtimeService {
         }
 
         return keys.stream()
-                .map(key -> redisTemplate.opsForValue().get(key))
-                .filter(Objects::nonNull)
+                .map(this::readRedisValue)
+                .flatMap(Optional::stream)
                 .map(this::toBusLocationResponse)
                 .filter(Objects::nonNull)
                 .filter(location -> location.getLatitud() != null && location.getLongitud() != null)
                 .collect(Collectors.toList());
+    }
+
+    private Optional<Object> readRedisValue(String key) {
+        try {
+            return Optional.ofNullable(redisTemplate.opsForValue().get(key));
+        } catch (Exception e) {
+            log.warn("No se pudo leer ubicación en Redis para key {}: {}", key, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     private BusLocationResponse toBusLocationResponse(Object value) {

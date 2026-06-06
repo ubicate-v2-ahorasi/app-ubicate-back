@@ -1,13 +1,17 @@
 package app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class BusLocationEvent {
     private Long busId;
     private String placa;
