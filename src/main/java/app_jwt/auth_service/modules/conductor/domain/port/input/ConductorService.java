@@ -14,6 +14,7 @@ public interface ConductorService {
     Page<ConductorResponse> searchConductores(Long empresaId, String searchTerm, Pageable pageable);
     ConductorResponse getConductorById(Long conductorId, Long empresaId);
     ConductorResponse updateConductor(Long conductorId, UpdateConductorRequest request, Long empresaId);
+    void changePassword(Long conductorId, String newPassword, Long empresaId);
     void deleteConductor(Long conductorId, Long empresaId);
     ConductorResponse cambiarEstado(Long conductorId, EstadoConductor estado, Long empresaId);
     ConductorResponse asignarBus(Long conductorId, Long busId, Long empresaId);

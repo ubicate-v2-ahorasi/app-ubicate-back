@@ -147,6 +147,19 @@ public class ConductorServiceImpl implements ConductorService {
         return ConductorResponse.fromWithEmpresa(updated, empresa.getNombre());
     }
 
+    @Override
+    @Transactional
+    public void changePassword(Long conductorId, String newPassword, Long empresaId) {
+        Conductor c = conductorRepository.findById(conductorId)
+                .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
+        if (!c.getEmpresaId().equals(empresaId)) throw new RuntimeException("No tiene permisos");
+        if (!c.getActivo()) throw new RuntimeException("Conductor no disponible");
+
+        Usuario usuario = c.getUsuario();
+        usuario.setPassword(passwordEncoder.encode(newPassword));
+        usuarioRepository.save(usuario);
+    }
+
     @Override @Transactional
     public void deleteConductor(Long conductorId, Long empresaId) {
         Conductor c = conductorRepository.findById(conductorId)

@@ -78,6 +78,17 @@ public class ConductorController {
         return ResponseEntity.ok(conductorService.updateConductor(conductorId, request, empresaId));
     }
 
+    @PatchMapping("/{conductorId}/password")
+    public ResponseEntity<ApiResponse> changePassword(
+            @PathVariable Long conductorId,
+            @Valid @RequestBody ChangeConductorPasswordRequest request,
+            Authentication authentication) {
+        authUtils.validateIsEmpresa(authentication);
+        Long empresaId = authUtils.getEmpresaId(authentication);
+        conductorService.changePassword(conductorId, request.getNewPassword(), empresaId);
+        return ResponseEntity.ok(new ApiResponse("Contraseña actualizada exitosamente", true));
+    }
+
     @DeleteMapping("/{conductorId}")
     public ResponseEntity<ApiResponse> deleteConductor(
             @PathVariable Long conductorId, Authentication authentication) {
