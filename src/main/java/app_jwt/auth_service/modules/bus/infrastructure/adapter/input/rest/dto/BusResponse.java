@@ -2,6 +2,7 @@ package app_jwt.auth_service.modules.bus.infrastructure.adapter.input.rest.dto;
 
 import app_jwt.auth_service.modules.bus.domain.model.Bus;
 import app_jwt.auth_service.modules.bus.domain.model.EstadoBus;
+import app_jwt.auth_service.modules.conductor.domain.model.Conductor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -29,6 +30,7 @@ public class BusResponse {
     private LocalDateTime ultimaUbicacion;
 
     private RutaInfo ruta;
+    private ConductorInfo conductor;
 
     @Data
     @Builder
@@ -41,6 +43,19 @@ public class BusResponse {
         private String destino;
     }
 
+    @Data
+    @Builder
+    public static class ConductorInfo {
+        private Long id;
+        private String nombreCompleto;
+        private String email;
+        private String dni;
+        private String telefono;
+        private String numeroLicencia;
+        private String categoriaLicencia;
+        private String estado;
+    }
+
     public static BusResponse from(Bus bus) {
         RutaInfo rutaInfo = null;
         if (bus.getRutaAsignada() != null) {
@@ -51,6 +66,21 @@ public class BusResponse {
                     .colorHex(bus.getRutaAsignada().getColorHex())
                     .origen(bus.getRutaAsignada().getOrigen())
                     .destino(bus.getRutaAsignada().getDestino())
+                    .build();
+        }
+
+        ConductorInfo conductorInfo = null;
+        Conductor conductor = bus.getConductorAsignado();
+        if (conductor != null && Boolean.TRUE.equals(conductor.getActivo())) {
+            conductorInfo = ConductorInfo.builder()
+                    .id(conductor.getId())
+                    .nombreCompleto(conductor.getUsuario().getNombre() + " " + conductor.getUsuario().getApellido())
+                    .email(conductor.getUsuario().getCorreo())
+                    .dni(conductor.getUsuario().getDni())
+                    .telefono(conductor.getUsuario().getTelefono())
+                    .numeroLicencia(conductor.getNumeroLicencia())
+                    .categoriaLicencia(conductor.getCategoriaLicencia() != null ? conductor.getCategoriaLicencia().name() : null)
+                    .estado(conductor.getEstado() != null ? conductor.getEstado().name() : null)
                     .build();
         }
 
@@ -72,6 +102,7 @@ public class BusResponse {
                 .velocidad(bus.getVelocidad())
                 .ultimaUbicacion(bus.getUltimaUbicacion())
                 .ruta(rutaInfo)
+                .conductor(conductorInfo)
                 .build();
     }
 }

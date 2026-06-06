@@ -46,7 +46,7 @@ public class ConductorController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         Long empresaId = authUtils.getEmpresaId(authentication);
-        PageRequest pageable = PageRequest.of(page - 1, size);
+        PageRequest pageable = PageRequest.of(Math.max(0, page - 1), size);
         return ResponseEntity.ok(conductorService.getConductores(empresaId, search, estado, categoria, pageable));
     }
 

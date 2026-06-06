@@ -37,7 +37,13 @@ public interface BusRepository extends JpaRepository<Bus, Long> {
             Pageable pageable
     );
 
-    @Query("SELECT b FROM Bus b LEFT JOIN FETCH b.rutaAsignada WHERE b.id = :busId")
+    @Query("""
+            SELECT b FROM Bus b
+            LEFT JOIN FETCH b.rutaAsignada
+            LEFT JOIN FETCH b.conductorAsignado c
+            LEFT JOIN FETCH c.usuario
+            WHERE b.id = :busId
+            """)
     Optional<Bus> findByIdWithRoute(@Param("busId") Long busId);
 
     @Query("SELECT b FROM Bus b LEFT JOIN FETCH b.rutaAsignada WHERE b.empresaId = :empresaId AND b.estado = :estado AND b.activo = true")
