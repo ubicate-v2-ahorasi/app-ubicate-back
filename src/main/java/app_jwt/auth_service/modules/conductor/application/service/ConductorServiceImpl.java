@@ -106,14 +106,13 @@ public class ConductorServiceImpl implements ConductorService {
 
     @Override @Transactional(readOnly = true)
     public Page<ConductorResponse> getConductores(Long empresaId, String searchTerm, EstadoConductor estado, CategoriaLicencia categoria, Pageable pageable) {
-        boolean includeDeleted = estado == EstadoConductor.INACTIVO;
-        return conductorRepository.searchConductores(empresaId, searchTerm, estado, includeDeleted, categoria, pageable)
+        return conductorRepository.searchConductores(empresaId, searchTerm, estado, categoria, pageable)
                 .map(ConductorResponse::from);
     }
 
     @Override @Transactional(readOnly = true)
     public Page<ConductorResponse> searchConductores(Long empresaId, String searchTerm, Pageable pageable) {
-        return conductorRepository.searchConductores(empresaId, searchTerm, null, false, null, pageable)
+        return conductorRepository.searchConductores(empresaId, searchTerm, null, null, pageable)
                 .map(ConductorResponse::from);
     }
 
@@ -166,10 +165,11 @@ public class ConductorServiceImpl implements ConductorService {
         Conductor c = conductorRepository.findById(conductorId)
                 .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
         if (!c.getEmpresaId().equals(empresaId)) throw new RuntimeException("No tiene permisos");
-        c.setActivo(false);
-        c.setEstado(EstadoConductor.INACTIVO);
+
+        Usuario usuario = c.getUsuario();
         c.setBusAsignado(null);
-        conductorRepository.save(c);
+        conductorRepository.delete(c);
+        usuarioRepository.delete(usuario);
     }
 
     @Override @Transactional
@@ -268,5 +268,6 @@ public class ConductorServiceImpl implements ConductorService {
         return sb.toString();
     }
 }
+
 
 
