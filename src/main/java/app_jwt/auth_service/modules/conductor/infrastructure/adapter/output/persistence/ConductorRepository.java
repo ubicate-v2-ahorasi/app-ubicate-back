@@ -45,7 +45,8 @@ public interface ConductorRepository extends JpaRepository<Conductor, Long> {
     Long countLicenciasPorVencer(@Param("empresaId") Long empresaId, @Param("fechaLimite") LocalDate fechaLimite);
 
     @Query("SELECT c FROM Conductor c LEFT JOIN c.usuario u WHERE c.empresaId = :empresaId " +
-            "AND (:estado IS NULL OR c.estado = :estado) " +
+            "AND ((:includeDeleted = true AND c.estado = :estado) OR " +
+            "(:includeDeleted = false AND c.activo = true AND (:estado IS NULL OR c.estado = :estado))) " +
             "AND (:categoria IS NULL OR c.categoriaLicencia = :categoria) " +
             "AND (:searchTerm IS NULL OR LOWER(u.nombre) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(u.dni) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
@@ -54,6 +55,9 @@ public interface ConductorRepository extends JpaRepository<Conductor, Long> {
             @Param("empresaId") Long empresaId,
             @Param("searchTerm") String searchTerm,
             @Param("estado") EstadoConductor estado,
+            @Param("includeDeleted") boolean includeDeleted,
             @Param("categoria") CategoriaLicencia categoria,
             Pageable pageable);
 }
+
+
