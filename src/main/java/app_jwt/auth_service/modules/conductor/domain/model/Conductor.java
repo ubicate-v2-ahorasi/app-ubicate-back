@@ -87,7 +87,9 @@ public class Conductor implements EmpresaAware {
     }
 
     public boolean isLicenciaPorVencer() {
-        return fechaVencimientoLicencia.isBefore(LocalDate.now().plusDays(30));
+        LocalDate today = LocalDate.now();
+        return !fechaVencimientoLicencia.isBefore(today)
+                && fechaVencimientoLicencia.isBefore(today.plusDays(30));
     }
 
     @Override

@@ -7,6 +7,8 @@ import app_jwt.auth_service.modules.conductor.domain.model.TurnoConductor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 public class ConductorResponse {
@@ -17,6 +19,7 @@ public class ConductorResponse {
     private String telefono;
     private String numeroLicencia;
     private CategoriaLicencia categoriaLicencia;
+    private LocalDate fechaVencimientoLicencia;
     private TurnoConductor turno;
     private EstadoConductor estado;
     private String placaBusAsignado;
@@ -34,6 +37,7 @@ public class ConductorResponse {
                 .telefono(conductor.getUsuario().getTelefono())
                 .numeroLicencia(conductor.getNumeroLicencia())
                 .categoriaLicencia(conductor.getCategoriaLicencia())
+                .fechaVencimientoLicencia(conductor.getFechaVencimientoLicencia())
                 .turno(conductor.getTurno())
                 .estado(conductor.getEstado())
                 .placaBusAsignado(conductor.getBusAsignado() != null ? conductor.getBusAsignado().getPlaca() : "Sin asignar")
