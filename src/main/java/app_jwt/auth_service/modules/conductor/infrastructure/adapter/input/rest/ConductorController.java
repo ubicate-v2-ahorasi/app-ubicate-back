@@ -78,6 +78,16 @@ public class ConductorController {
         return ResponseEntity.ok(conductorService.updateConductor(conductorId, request, empresaId));
     }
 
+    @PatchMapping("/{conductorId}/licencia")
+    public ResponseEntity<ConductorResponse> renewLicense(
+            @PathVariable Long conductorId,
+            @Valid @RequestBody RenewLicenseRequest request,
+            Authentication authentication) {
+        authUtils.validateIsEmpresa(authentication);
+        Long empresaId = authUtils.getEmpresaId(authentication);
+        return ResponseEntity.ok(conductorService.renewLicense(conductorId, request, empresaId));
+    }
+
     @PatchMapping("/{conductorId}/password")
     public ResponseEntity<ApiResponse> changePassword(
             @PathVariable Long conductorId,

@@ -29,6 +29,7 @@ public interface ConductorRepository extends JpaRepository<Conductor, Long> {
     boolean existsByNumeroLicenciaAndActivoTrue(String numeroLicencia);
     boolean existsByUsuarioIdAndActivoTrue(Long usuarioId);
     boolean existsByBusAsignadoIdAndActivoTrue(Long busId);
+    Optional<Conductor> findByNumeroLicenciaAndActivoTrue(String numeroLicencia);
 
     @Query("SELECT c FROM Conductor c LEFT JOIN FETCH c.busAsignado WHERE c.usuario.id = :usuarioId AND c.activo = true ORDER BY c.id DESC")
     List<Conductor> findByUsuarioIdAndActivoTrueOrderByIdDesc(@Param("usuarioId") Long usuarioId);

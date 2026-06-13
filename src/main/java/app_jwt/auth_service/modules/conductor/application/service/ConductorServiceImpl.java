@@ -149,6 +149,35 @@ public class ConductorServiceImpl implements ConductorService {
 
     @Override
     @Transactional
+    public ConductorResponse renewLicense(Long conductorId, RenewLicenseRequest request, Long empresaId) {
+        Conductor c = conductorRepository.findById(conductorId)
+                .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
+        if (!c.getEmpresaId().equals(empresaId)) throw new RuntimeException("No tiene permisos");
+        if (!c.getActivo()) throw new RuntimeException("Conductor no disponible");
+
+        if (request.getNumeroLicencia() != null && !request.getNumeroLicencia().isBlank()) {
+            String numeroLicencia = request.getNumeroLicencia().toUpperCase(Locale.ROOT).trim();
+            conductorRepository.findByNumeroLicenciaAndActivoTrue(numeroLicencia)
+                    .filter(existing -> !existing.getId().equals(conductorId))
+                    .ifPresent(existing -> {
+                        throw new RuntimeException("Ya existe un conductor con ese número de licencia");
+                    });
+            c.setNumeroLicencia(numeroLicencia);
+        }
+
+        if (request.getCategoriaLicencia() != null) {
+            c.setCategoriaLicencia(request.getCategoriaLicencia());
+        }
+
+        c.setFechaVencimientoLicencia(request.getFechaVencimientoLicencia());
+
+        Conductor updated = conductorRepository.save(c);
+        Empresa empresa = empresaRepository.findById(empresaId).orElseThrow();
+        return ConductorResponse.fromWithEmpresa(updated, empresa.getNombre());
+    }
+
+    @Override
+    @Transactional
     public void changePassword(Long conductorId, String newPassword, Long empresaId) {
         Conductor c = conductorRepository.findById(conductorId)
                 .orElseThrow(() -> new RuntimeException("Conductor no encontrado"));
