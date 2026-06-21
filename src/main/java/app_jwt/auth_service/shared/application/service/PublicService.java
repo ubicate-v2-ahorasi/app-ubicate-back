@@ -7,9 +7,11 @@ import app_jwt.auth_service.modules.bus.infrastructure.adapter.output.persistenc
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.BusPositionDTO;
 import app_jwt.auth_service.shared.infrastructure.adapter.input.rest.dto.EmpresaPublicResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteResponse;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopResponse;
 import app_jwt.auth_service.modules.route.domain.model.Route;
 import app_jwt.auth_service.modules.route.domain.model.EstadoRuta;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.output.persistence.RouteRepository;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.output.persistence.RouteStopRepository;
 import app_jwt.auth_service.shared.infrastructure.persistence.EmpresaRepository;
 import app_jwt.auth_service.shared.service.RedisRealtimeService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class PublicService {
 
     private final BusRepository busRepository;
     private final RouteRepository routeRepository;
+    private final RouteStopRepository routeStopRepository;
     private final EmpresaRepository empresaRepository;
     private final RedisRealtimeService redisRealtimeService;
 
@@ -107,6 +110,23 @@ public class PublicService {
         }
 
         return RouteResponse.from(ruta);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RouteStopResponse> getParadasByRuta(Long rutaId) {
+        Route ruta = routeRepository.findById(rutaId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Ruta no encontrada"));
+
+        if (!Boolean.TRUE.equals(ruta.getActivo()) || ruta.getEstado() != EstadoRuta.ACTIVA) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Ruta no disponible");
+        }
+
+        return routeStopRepository.findByRouteIdAndActivoTrueOrderByOrdenAsc(rutaId)
+                .stream()
+                .map(RouteStopResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
