@@ -5,6 +5,7 @@ import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.
 import app_jwt.auth_service.shared.infrastructure.adapter.input.rest.dto.EmpresaPublicResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteResponse;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopResponse;
+import app_jwt.auth_service.modules.passage.infrastructure.adapter.input.rest.dto.RouteStopPassageResponse;
 import app_jwt.auth_service.shared.application.service.PublicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -58,6 +59,13 @@ public class PublicController {
     @GetMapping("/rutas/{rutaId}/paradas")
     public ResponseEntity<List<RouteStopResponse>> getParadasByRuta(@PathVariable Long rutaId) {
         return ResponseEntity.ok(publicService.getParadasByRuta(rutaId));
+    }
+
+    @GetMapping("/rutas/{rutaId}/paradas/pasos")
+    public ResponseEntity<List<RouteStopPassageResponse>> getPasosByRuta(
+            @PathVariable Long rutaId,
+            @RequestParam(required = false) Long busId) {
+        return ResponseEntity.ok(publicService.getPasosByRuta(rutaId, busId));
     }
 
     @GetMapping("/buses/{busId}")

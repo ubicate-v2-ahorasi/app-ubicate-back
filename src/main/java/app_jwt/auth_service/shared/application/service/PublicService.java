@@ -12,6 +12,9 @@ import app_jwt.auth_service.modules.route.domain.model.Route;
 import app_jwt.auth_service.modules.route.domain.model.EstadoRuta;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.output.persistence.RouteRepository;
 import app_jwt.auth_service.modules.route.infrastructure.adapter.output.persistence.RouteStopRepository;
+import app_jwt.auth_service.modules.passage.domain.model.RouteStopPassage;
+import app_jwt.auth_service.modules.passage.infrastructure.adapter.input.rest.dto.RouteStopPassageResponse;
+import app_jwt.auth_service.modules.passage.infrastructure.adapter.output.persistence.RouteStopPassageRepository;
 import app_jwt.auth_service.shared.infrastructure.persistence.EmpresaRepository;
 import app_jwt.auth_service.shared.service.RedisRealtimeService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ public class PublicService {
     private final BusRepository busRepository;
     private final RouteRepository routeRepository;
     private final RouteStopRepository routeStopRepository;
+    private final RouteStopPassageRepository routeStopPassageRepository;
     private final EmpresaRepository empresaRepository;
     private final RedisRealtimeService redisRealtimeService;
 
@@ -126,6 +130,17 @@ public class PublicService {
         return routeStopRepository.findByRouteIdAndActivoTrueOrderByOrdenAsc(rutaId)
                 .stream()
                 .map(RouteStopResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<RouteStopPassageResponse> getPasosByRuta(Long rutaId, Long busId) {
+        List<RouteStopPassage> pasos = (busId != null)
+                ? routeStopPassageRepository.findByRutaIdAndBusIdOrderByHoraCruceAsc(rutaId, busId)
+                : routeStopPassageRepository.findByRutaIdOrderByHoraCruceAsc(rutaId);
+
+        return pasos.stream()
+                .map(RouteStopPassageResponse::from)
                 .collect(Collectors.toList());
     }
 

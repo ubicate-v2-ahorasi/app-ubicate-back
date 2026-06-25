@@ -42,6 +42,7 @@ public class BusTrackingServiceImpl implements BusTrackingService {
     private final RedisRealtimeService redisRealtimeService;
     private final RabbitTemplate rabbitTemplate;
     private final PushNotificationService pushNotificationService;
+    private final app_jwt.auth_service.modules.passage.domain.port.input.RouteStopPassageService routeStopPassageService;
 
     @Value("${google.maps.api.key:}")
     private String googleMapsApiKey;
@@ -204,6 +205,19 @@ public class BusTrackingServiceImpl implements BusTrackingService {
 
         if (bus.getRutaAsignada() != null) {
             redisRealtimeService.upsertBusToRutaIndex(bus);
+
+            // Detectar y registrar el paso por parada (no debe romper el tracking).
+            try {
+                routeStopPassageService.detectAndRecord(
+                        bus.getId(),
+                        bus.getPlaca(),
+                        bus.getRutaAsignada().getId(),
+                        bus.getLatitud(),
+                        bus.getLongitud()
+                );
+            } catch (Exception e) {
+                log.warn("No se pudo registrar el paso por parada para bus {}: {}", placa, e.getMessage());
+            }
         }
 
         // Publish to RabbitMQ for async history persistence
