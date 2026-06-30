@@ -38,25 +38,33 @@ public class RouteStopPassageServiceImpl implements RouteStopPassageService {
             return;
         }
 
-        RouteStop nearest = null;
-        double nearestDist = Double.MAX_VALUE;
-        for (RouteStop s : stops) {
-            if (s.getLatitud() == null || s.getLongitud() == null) continue;
-            double d = haversine(latitud, longitud, s.getLatitud(), s.getLongitud());
-            if (d < nearestDist) {
-                nearestDist = d;
-                nearest = s;
-            }
-        }
-
-        if (nearest == null || nearestDist > RADIO_METROS) {
-            return;
-        }
-
         Optional<RouteStopPassage> last = passageRepository.findTopByBusIdOrderByHoraCruceDesc(busId);
-        if (last.isPresent() && nearest.getId().equals(last.get().getRouteStopId())) {
-            // El bus sigue sobre la misma parada: no duplicar el registro.
+
+        // Deteccion SECUENCIAL: solo la PROXIMA parada esperada (en orden).
+        // Asi un bus fuera de ruta o que salta paradas no registra cruces.
+        RouteStop expected;
+        if (last.isPresent()) {
+            int idx = -1;
+            for (int i = 0; i < stops.size(); i++) {
+                if (stops.get(i).getId().equals(last.get().getRouteStopId())) {
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx < 0 || idx + 1 >= stops.size()) {
+                return; // ruta ya completada (o ultima parada desconocida)
+            }
+            expected = stops.get(idx + 1);
+        } else {
+            expected = stops.get(0);
+        }
+
+        if (expected.getLatitud() == null || expected.getLongitud() == null) {
             return;
+        }
+        double dist = haversine(latitud, longitud, expected.getLatitud(), expected.getLongitud());
+        if (dist > RADIO_METROS) {
+            return; // aun no llega a la proxima parada esperada
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -66,18 +74,18 @@ public class RouteStopPassageServiceImpl implements RouteStopPassageService {
 
         RouteStopPassage passage = RouteStopPassage.builder()
                 .rutaId(rutaId)
-                .routeStopId(nearest.getId())
+                .routeStopId(expected.getId())
                 .busId(busId)
                 .placa(placa)
-                .orden(nearest.getOrden())
-                .nombreParada(nearest.getNombre())
+                .orden(expected.getOrden())
+                .nombreParada(expected.getNombre())
                 .horaCruce(now)
                 .segundosDesdeAnterior(delta)
                 .build();
 
         passageRepository.save(passage);
-        log.info("Paso registrado: bus {} -> parada {} ({}) ruta {} (delta={}s)",
-                busId, nearest.getOrden(), nearest.getNombre(), rutaId, delta);
+        log.info("Paso registrado (secuencial): bus {} -> parada {} ({}) ruta {} (delta={}s)",
+                busId, expected.getOrden(), expected.getNombre(), rutaId, delta);
     }
 
     private double haversine(double lat1, double lon1, double lat2, double lon2) {
