@@ -26,6 +26,10 @@ public class RouteStopPassageServiceImpl implements RouteStopPassageService {
     /** Radio (metros) dentro del cual se considera que el bus cruzo la parada. */
     private static final double RADIO_METROS = 50.0;
 
+    /** Tiempo minimo (s) para volver a registrar la MISMA parada del mismo bus.
+     * Evita duplicados al estar detenido, pero permite re-marcarla en la vuelta. */
+    private static final long COOLDOWN_SECONDS = 180;
+
     @Override
     @Transactional
     public void detectAndRecord(Long busId, String placa, Long rutaId, Double latitud, Double longitud) {
@@ -38,54 +42,54 @@ public class RouteStopPassageServiceImpl implements RouteStopPassageService {
             return;
         }
 
-        Optional<RouteStopPassage> last = passageRepository.findTopByBusIdOrderByHoraCruceDesc(busId);
-
-        // Deteccion SECUENCIAL: solo la PROXIMA parada esperada (en orden).
-        // Asi un bus fuera de ruta o que salta paradas no registra cruces.
-        RouteStop expected;
-        if (last.isPresent()) {
-            int idx = -1;
-            for (int i = 0; i < stops.size(); i++) {
-                if (stops.get(i).getId().equals(last.get().getRouteStopId())) {
-                    idx = i;
-                    break;
-                }
+        // POR PARADA: la parada mas cercana DENTRO del radio (si el bus esta en
+        // una parada). No exige orden -> maneja ida y vuelta naturalmente.
+        RouteStop nearest = null;
+        double nearestDist = Double.MAX_VALUE;
+        for (RouteStop s : stops) {
+            if (s.getLatitud() == null || s.getLongitud() == null) continue;
+            double d = haversine(latitud, longitud, s.getLatitud(), s.getLongitud());
+            if (d < nearestDist) {
+                nearestDist = d;
+                nearest = s;
             }
-            if (idx < 0 || idx + 1 >= stops.size()) {
-                return; // ruta ya completada (o ultima parada desconocida)
-            }
-            expected = stops.get(idx + 1);
-        } else {
-            expected = stops.get(0);
         }
-
-        if (expected.getLatitud() == null || expected.getLongitud() == null) {
-            return;
-        }
-        double dist = haversine(latitud, longitud, expected.getLatitud(), expected.getLongitud());
-        if (dist > RADIO_METROS) {
-            return; // aun no llega a la proxima parada esperada
+        if (nearest == null || nearestDist > RADIO_METROS) {
+            return; // el bus no esta sobre ninguna parada
         }
 
         LocalDateTime now = LocalDateTime.now();
-        Integer delta = last
+
+        // Cooldown: no re-registrar la MISMA parada si fue hace muy poco (evita
+        // duplicados al estar detenido); si paso suficiente tiempo (vuelta) si.
+        Optional<RouteStopPassage> lastForStop = passageRepository
+                .findTopByBusIdAndRouteStopIdOrderByHoraCruceDesc(busId, nearest.getId());
+        if (lastForStop.isPresent()
+                && Duration.between(lastForStop.get().getHoraCruce(), now).getSeconds() < COOLDOWN_SECONDS) {
+            return;
+        }
+
+        // Demora desde la ULTIMA parada cruzada (cualquiera) por este bus.
+        Optional<RouteStopPassage> lastAny =
+                passageRepository.findTopByBusIdOrderByHoraCruceDesc(busId);
+        Integer delta = lastAny
                 .map(p -> (int) Duration.between(p.getHoraCruce(), now).getSeconds())
                 .orElse(null);
 
         RouteStopPassage passage = RouteStopPassage.builder()
                 .rutaId(rutaId)
-                .routeStopId(expected.getId())
+                .routeStopId(nearest.getId())
                 .busId(busId)
                 .placa(placa)
-                .orden(expected.getOrden())
-                .nombreParada(expected.getNombre())
+                .orden(nearest.getOrden())
+                .nombreParada(nearest.getNombre())
                 .horaCruce(now)
                 .segundosDesdeAnterior(delta)
                 .build();
 
         passageRepository.save(passage);
-        log.info("Paso registrado (secuencial): bus {} -> parada {} ({}) ruta {} (delta={}s)",
-                busId, expected.getOrden(), expected.getNombre(), rutaId, delta);
+        log.info("Paso registrado: bus {} -> parada {} ({}) ruta {} (delta={}s)",
+                busId, nearest.getOrden(), nearest.getNombre(), rutaId, delta);
     }
 
     private double haversine(double lat1, double lon1, double lat2, double lon2) {

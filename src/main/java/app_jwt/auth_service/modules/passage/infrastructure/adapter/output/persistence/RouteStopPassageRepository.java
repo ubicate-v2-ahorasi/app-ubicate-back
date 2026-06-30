@@ -15,4 +15,7 @@ public interface RouteStopPassageRepository extends JpaRepository<RouteStopPassa
     List<RouteStopPassage> findByRutaIdOrderByHoraCruceAsc(Long rutaId);
 
     Optional<RouteStopPassage> findTopByBusIdOrderByHoraCruceDesc(Long busId);
+
+    Optional<RouteStopPassage> findTopByBusIdAndRouteStopIdOrderByHoraCruceDesc(
+            Long busId, Long routeStopId);
 }
