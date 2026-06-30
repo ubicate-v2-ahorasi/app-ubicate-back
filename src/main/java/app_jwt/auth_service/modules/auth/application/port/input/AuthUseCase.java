@@ -9,6 +9,7 @@ public interface AuthUseCase {
     AuthResponse registerEmpresa(RegisterRequest request);
     AuthResponse registerChofer(RegisterRequest request);
     AuthResponse login(LoginRequest request);
+    AuthResponse refresh(String refreshToken);
     Usuario getUsuarioByEmail(String email);
     Usuario getUsuarioByUsername(String username);
 }

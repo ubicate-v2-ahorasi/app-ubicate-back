@@ -6,4 +6,8 @@ public interface AuthSecurityPort {
     String encodePassword(String rawPassword);
     void authenticate(String username, String password);
     String generateToken(Usuario usuario);
+    String generateRefreshToken(Usuario usuario);
+
+    /** Valida el refresh token y devuelve el userId; null si es invalido/expirado. */
+    Long validateRefreshTokenAndGetUserId(String refreshToken);
 }

@@ -11,13 +11,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AuthResponse {
     private String token;
+    private String refreshToken;
     private UserResponse user;
     private Long empresaId;
     private String message;
 
-    public static AuthResponse success(String token, UserResponse user) {
+    public static AuthResponse success(String token, String refreshToken, UserResponse user) {
         return AuthResponse.builder()
-                .token(token).user(user)
+                .token(token).refreshToken(refreshToken).user(user)
                 .empresaId(user.getEmpresaId())
                 .message("Autenticación exitosa")
                 .build();

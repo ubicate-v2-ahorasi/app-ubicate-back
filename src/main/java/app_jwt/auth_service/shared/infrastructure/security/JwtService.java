@@ -26,6 +26,9 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
+    @Value("${jwt.refresh-expiration:2592000000}") // 30 dias por defecto
+    private long refreshExpiration;
+
     public String getToken(UserDetails user, Usuario usuario) {
         if (usuario.getEmpresaId() == null) {
             throw new IllegalStateException("No se puede generar token sin empresaId");
@@ -39,12 +42,30 @@ public class JwtService {
         claims.put("nombre", usuario.getNombre());
         claims.put("apellido", usuario.getApellido());
 
-        return generateToken(claims, user.getUsername());
+        return generateToken(claims, user.getUsername(), jwtExpiration);
     }
 
-    private String generateToken(Map<String, Object> claims, String subject) {
+    /** Genera un refresh token de larga duracion (stateless). */
+    public String getRefreshToken(Usuario usuario) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", usuario.getId());
+        claims.put("type", "refresh");
+        return generateToken(claims, usuario.getUsername(), refreshExpiration);
+    }
+
+    /** true si el token es un refresh token valido y no expirado. */
+    public boolean isRefreshToken(String token) {
+        try {
+            final String type = getClaim(token, c -> c.get("type", String.class));
+            return "refresh".equals(type) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String generateToken(Map<String, Object> claims, String subject, long expirationMs) {
         Date now = new Date(System.currentTimeMillis());
-        Date expiration = new Date(System.currentTimeMillis() + jwtExpiration);
+        Date expiration = new Date(System.currentTimeMillis() + expirationMs);
 
         return Jwts.builder()
                 .setClaims(claims)

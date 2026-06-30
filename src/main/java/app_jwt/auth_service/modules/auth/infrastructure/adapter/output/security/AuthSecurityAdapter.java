@@ -39,4 +39,17 @@ public class AuthSecurityAdapter implements AuthSecurityPort {
     public String generateToken(Usuario usuario) {
         return jwtService.getToken(usuario, usuario);
     }
+
+    @Override
+    public String generateRefreshToken(Usuario usuario) {
+        return jwtService.getRefreshToken(usuario);
+    }
+
+    @Override
+    public Long validateRefreshTokenAndGetUserId(String refreshToken) {
+        if (refreshToken == null || !jwtService.isRefreshToken(refreshToken)) {
+            return null;
+        }
+        return jwtService.getUserId(refreshToken);
+    }
 }

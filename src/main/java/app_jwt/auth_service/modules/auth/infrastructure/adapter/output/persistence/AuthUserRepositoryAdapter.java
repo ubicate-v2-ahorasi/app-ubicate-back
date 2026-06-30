@@ -20,6 +20,11 @@ public class AuthUserRepositoryAdapter implements AuthUserRepositoryPort {
     }
 
     @Override
+    public Optional<Usuario> findById(Long id) {
+        return usuarioRepository.findById(id);
+    }
+
+    @Override
     public Optional<Usuario> findByCorreo(String correo) {
         return usuarioRepository.findByCorreo(correo);
     }

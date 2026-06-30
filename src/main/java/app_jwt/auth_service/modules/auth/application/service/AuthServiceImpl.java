@@ -61,9 +61,10 @@ public class AuthServiceImpl implements AuthUseCase {
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
         String token = securityPort.generateToken(usuarioGuardado);
+        String refreshToken = securityPort.generateRefreshToken(usuarioGuardado);
         UserResponse userResponse = createUserResponseWithBusInfo(usuarioGuardado);
         log.info("✅ Registro de empresa completado");
-        return AuthResponse.success(token, userResponse);
+        return AuthResponse.success(token, refreshToken, userResponse);
     }
 
     @Override
@@ -80,11 +81,29 @@ public class AuthServiceImpl implements AuthUseCase {
         validateUserForLogin(usuario);
         
         securityPort.authenticate(usuario.getUsername(), request.getPassword());
-        
+
         String token = securityPort.generateToken(usuario);
+        String refreshToken = securityPort.generateRefreshToken(usuario);
         UserResponse userResponse = createUserResponseWithBusInfo(usuario);
         log.info("✅ Login exitoso para: {}", request.getEmail());
-        return AuthResponse.success(token, userResponse);
+        return AuthResponse.success(token, refreshToken, userResponse);
+    }
+
+    @Override
+    public AuthResponse refresh(String refreshToken) {
+        Long userId = securityPort.validateRefreshTokenAndGetUserId(refreshToken);
+        if (userId == null) {
+            throw new InvalidCredentialsException("Refresh token inválido o expirado");
+        }
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado"));
+        validateUserForLogin(usuario);
+
+        String newToken = securityPort.generateToken(usuario);
+        String newRefresh = securityPort.generateRefreshToken(usuario); // rotacion
+        UserResponse userResponse = createUserResponseWithBusInfo(usuario);
+        log.info("🔄 Token renovado para usuario id={}", userId);
+        return AuthResponse.success(newToken, newRefresh, userResponse);
     }
 
     private UserResponse createUserResponseWithBusInfo(Usuario usuario) {

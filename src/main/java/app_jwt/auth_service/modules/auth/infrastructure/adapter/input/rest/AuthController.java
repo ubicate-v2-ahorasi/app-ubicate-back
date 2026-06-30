@@ -3,6 +3,7 @@ package app_jwt.auth_service.modules.auth.infrastructure.adapter.input.rest;
 import app_jwt.auth_service.modules.auth.application.dto.AuthResponse;
 import app_jwt.auth_service.modules.auth.application.dto.LoginRequest;
 import app_jwt.auth_service.modules.auth.application.dto.RegisterRequest;
+import app_jwt.auth_service.modules.auth.application.dto.RefreshTokenRequest;
 import app_jwt.auth_service.modules.auth.application.port.input.AuthUseCase;
 import app_jwt.auth_service.shared.enums.Role;
 import jakarta.validation.Valid;
@@ -44,5 +45,10 @@ public class AuthController {
 
         log.info("Login exitoso para email: {}", request.getEmail());
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
     }
 }
