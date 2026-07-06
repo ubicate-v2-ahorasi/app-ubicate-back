@@ -3,6 +3,7 @@ package app_jwt.auth_service.modules.conductor.domain.port.input;
 import app_jwt.auth_service.modules.conductor.infrastructure.adapter.input.rest.dto.*;
 import app_jwt.auth_service.modules.conductor.domain.model.CategoriaLicencia;
 import app_jwt.auth_service.modules.conductor.domain.model.EstadoConductor;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -23,4 +24,5 @@ public interface ConductorService {
     List<ConductorResponse> getConductoresByEstado(Long empresaId, EstadoConductor estado);
     ConductorStatsResponse getStats(Long empresaId);
     DriverAssignmentResponse getMyAssignment(Long usuarioId);
+    List<RouteStopResponse> getMyStops(Long usuarioId);
 }

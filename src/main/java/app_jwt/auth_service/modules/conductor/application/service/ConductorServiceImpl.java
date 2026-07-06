@@ -14,6 +14,8 @@ import app_jwt.auth_service.modules.conductor.domain.port.input.ConductorService
 import app_jwt.auth_service.modules.conductor.infrastructure.adapter.input.rest.dto.*;
 import app_jwt.auth_service.modules.conductor.infrastructure.adapter.output.persistence.ConductorRepository;
 import app_jwt.auth_service.modules.route.domain.model.Route;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopResponse;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.output.persistence.RouteStopRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +40,7 @@ public class ConductorServiceImpl implements ConductorService {
     private final BusRepository busRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmpresaRepository empresaRepository;
+    private final RouteStopRepository routeStopRepository;
 
     @Override
     @Transactional
@@ -274,6 +277,23 @@ public class ConductorServiceImpl implements ConductorService {
         Bus bus = c.getBusAsignado();
         Route ruta = bus != null ? bus.getRutaAsignada() : null;
         return DriverAssignmentResponse.of(c.getId(), bus, ruta);
+    }
+
+    @Override
+    public List<RouteStopResponse> getMyStops(Long usuarioId) {
+        Conductor c = conductorRepository.findByUsuarioIdAndActivoTrue(usuarioId)
+                .orElseThrow(() -> new NoSuchElementException("Conductor no encontrado"));
+        Bus bus = c.getBusAsignado();
+        Route ruta = bus != null ? bus.getRutaAsignada() : null;
+        if (ruta == null) return List.of();
+
+        // El conductor debe ver las paradas de SU ruta asignada aunque la ruta
+        // este momentaneamente inactiva/oculta para el publico (a diferencia
+        // del endpoint publico, que si exige la ruta ACTIVA).
+        return routeStopRepository.findByRouteIdAndActivoTrueOrderByOrdenAsc(ruta.getId())
+                .stream()
+                .map(RouteStopResponse::from)
+                .collect(Collectors.toList());
     }
 
     private String generateUsername(String email) {

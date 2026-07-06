@@ -2,12 +2,15 @@ package app_jwt.auth_service.modules.conductor.infrastructure.adapter.input.rest
 
 import app_jwt.auth_service.modules.conductor.domain.port.input.ConductorService;
 import app_jwt.auth_service.modules.conductor.infrastructure.adapter.input.rest.dto.DriverAssignmentResponse;
+import app_jwt.auth_service.modules.route.infrastructure.adapter.input.rest.dto.RouteStopResponse;
 import app_jwt.auth_service.shared.utils.AuthUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/driver")
@@ -22,5 +25,11 @@ public class DriverController {
     public ResponseEntity<DriverAssignmentResponse> getMyAssignment(Authentication authentication) {
         Long usuarioId = authUtils.getUserId(authentication);
         return ResponseEntity.ok(conductorService.getMyAssignment(usuarioId));
+    }
+
+    @GetMapping("/me/paradas")
+    public ResponseEntity<List<RouteStopResponse>> getMyStops(Authentication authentication) {
+        Long usuarioId = authUtils.getUserId(authentication);
+        return ResponseEntity.ok(conductorService.getMyStops(usuarioId));
     }
 }
