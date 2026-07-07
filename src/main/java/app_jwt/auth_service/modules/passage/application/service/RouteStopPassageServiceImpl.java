@@ -23,8 +23,11 @@ public class RouteStopPassageServiceImpl implements RouteStopPassageService {
     private final RouteStopRepository routeStopRepository;
     private final RouteStopPassageRepository passageRepository;
 
-    /** Radio (metros) dentro del cual se considera que el bus cruzo la parada. */
-    private static final double RADIO_METROS = 50.0;
+    /** Radio (metros) dentro del cual se considera que el bus cruzo la parada.
+     * 80 m da tolerancia para no perder paradas cuando el bus va rapido y el GPS
+     * se muestrea cada pocos segundos (a 60 km/h avanza ~67 m entre lecturas).
+     * Debe coincidir con el radio usado en la app movil. */
+    private static final double RADIO_METROS = 80.0;
 
     /** Tiempo minimo (s) para volver a registrar la MISMA parada del mismo bus.
      * Evita duplicados al estar detenido, pero permite re-marcarla en la vuelta. */
